@@ -1,0 +1,247 @@
+State 10 contains 4 shift/reduce conflicts.
+State 11 contains 4 shift/reduce conflicts.
+State 12 contains 4 shift/reduce conflicts.
+State 13 contains 4 shift/reduce conflicts.
+
+Grammar
+rule 1    Line -> expr
+rule 2    expr -> NUMBER
+rule 3    expr -> expr '+' expr
+rule 4    expr -> expr '-' expr
+rule 5    expr -> expr '*' expr
+rule 6    expr -> expr '/' expr
+rule 7    expr -> '(' expr ')'
+
+Terminals, with rules where they appear
+
+$ (-1)
+'(' (40) 7
+')' (41) 7
+'*' (42) 5
+'+' (43) 3
+'-' (45) 4
+'/' (47) 6
+error (256)
+NUMBER (257) 2
+
+Nonterminals, with rules where they appear
+
+Line (10)
+    on left: 1
+expr (11)
+    on left: 2 3 4 5 6 7, on right: 1 3 4 5 6 7
+
+
+state 0
+
+    NUMBER	shift, and go to state 1
+    '(' 	shift, and go to state 2
+
+    Line	go to state 14
+    expr	go to state 3
+
+
+
+state 1
+
+    expr  ->  NUMBER .   (rule 2)
+
+    $default	reduce using rule 2 (expr)
+
+
+
+state 2
+
+    expr  ->  '(' . expr ')'   (rule 7)
+
+    NUMBER	shift, and go to state 1
+    '(' 	shift, and go to state 2
+
+    expr	go to state 4
+
+
+
+state 3
+
+    Line  ->  expr .   (rule 1)
+    expr  ->  expr . '+' expr   (rule 3)
+    expr  ->  expr . '-' expr   (rule 4)
+    expr  ->  expr . '*' expr   (rule 5)
+    expr  ->  expr . '/' expr   (rule 6)
+
+    '+' 	shift, and go to state 5
+    '-' 	shift, and go to state 6
+    '*' 	shift, and go to state 7
+    '/' 	shift, and go to state 8
+
+    $default	reduce using rule 1 (Line)
+
+
+
+state 4
+
+    expr  ->  expr . '+' expr   (rule 3)
+    expr  ->  expr . '-' expr   (rule 4)
+    expr  ->  expr . '*' expr   (rule 5)
+    expr  ->  expr . '/' expr   (rule 6)
+    expr  ->  '(' expr . ')'   (rule 7)
+
+    '+' 	shift, and go to state 5
+    '-' 	shift, and go to state 6
+    '*' 	shift, and go to state 7
+    '/' 	shift, and go to state 8
+    ')' 	shift, and go to state 9
+
+
+
+state 5
+
+    expr  ->  expr '+' . expr   (rule 3)
+
+    NUMBER	shift, and go to state 1
+    '(' 	shift, and go to state 2
+
+    expr	go to state 10
+
+
+
+state 6
+
+    expr  ->  expr '-' . expr   (rule 4)
+
+    NUMBER	shift, and go to state 1
+    '(' 	shift, and go to state 2
+
+    expr	go to state 11
+
+
+
+state 7
+
+    expr  ->  expr '*' . expr   (rule 5)
+
+    NUMBER	shift, and go to state 1
+    '(' 	shift, and go to state 2
+
+    expr	go to state 12
+
+
+
+state 8
+
+    expr  ->  expr '/' . expr   (rule 6)
+
+    NUMBER	shift, and go to state 1
+    '(' 	shift, and go to state 2
+
+    expr	go to state 13
+
+
+
+state 9
+
+    expr  ->  '(' expr ')' .   (rule 7)
+
+    $default	reduce using rule 7 (expr)
+
+
+
+state 10
+
+    expr  ->  expr . '+' expr   (rule 3)
+    expr  ->  expr '+' expr .   (rule 3)
+    expr  ->  expr . '-' expr   (rule 4)
+    expr  ->  expr . '*' expr   (rule 5)
+    expr  ->  expr . '/' expr   (rule 6)
+
+    '+' 	shift, and go to state 5
+    '-' 	shift, and go to state 6
+    '*' 	shift, and go to state 7
+    '/' 	shift, and go to state 8
+
+    '+' 	[reduce using rule 3 (expr)]
+    '-' 	[reduce using rule 3 (expr)]
+    '*' 	[reduce using rule 3 (expr)]
+    '/' 	[reduce using rule 3 (expr)]
+    $default	reduce using rule 3 (expr)
+
+
+
+state 11
+
+    expr  ->  expr . '+' expr   (rule 3)
+    expr  ->  expr . '-' expr   (rule 4)
+    expr  ->  expr '-' expr .   (rule 4)
+    expr  ->  expr . '*' expr   (rule 5)
+    expr  ->  expr . '/' expr   (rule 6)
+
+    '+' 	shift, and go to state 5
+    '-' 	shift, and go to state 6
+    '*' 	shift, and go to state 7
+    '/' 	shift, and go to state 8
+
+    '+' 	[reduce using rule 4 (expr)]
+    '-' 	[reduce using rule 4 (expr)]
+    '*' 	[reduce using rule 4 (expr)]
+    '/' 	[reduce using rule 4 (expr)]
+    $default	reduce using rule 4 (expr)
+
+
+
+state 12
+
+    expr  ->  expr . '+' expr   (rule 3)
+    expr  ->  expr . '-' expr   (rule 4)
+    expr  ->  expr . '*' expr   (rule 5)
+    expr  ->  expr '*' expr .   (rule 5)
+    expr  ->  expr . '/' expr   (rule 6)
+
+    '+' 	shift, and go to state 5
+    '-' 	shift, and go to state 6
+    '*' 	shift, and go to state 7
+    '/' 	shift, and go to state 8
+
+    '+' 	[reduce using rule 5 (expr)]
+    '-' 	[reduce using rule 5 (expr)]
+    '*' 	[reduce using rule 5 (expr)]
+    '/' 	[reduce using rule 5 (expr)]
+    $default	reduce using rule 5 (expr)
+
+
+
+state 13
+
+    expr  ->  expr . '+' expr   (rule 3)
+    expr  ->  expr . '-' expr   (rule 4)
+    expr  ->  expr . '*' expr   (rule 5)
+    expr  ->  expr . '/' expr   (rule 6)
+    expr  ->  expr '/' expr .   (rule 6)
+
+    '+' 	shift, and go to state 5
+    '-' 	shift, and go to state 6
+    '*' 	shift, and go to state 7
+    '/' 	shift, and go to state 8
+
+    '+' 	[reduce using rule 6 (expr)]
+    '-' 	[reduce using rule 6 (expr)]
+    '*' 	[reduce using rule 6 (expr)]
+    '/' 	[reduce using rule 6 (expr)]
+    $default	reduce using rule 6 (expr)
+
+
+
+state 14
+
+    $   	go to state 15
+
+
+
+state 15
+
+    $   	go to state 16
+
+
+
+state 16
+
+    $default	accept

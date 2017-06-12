@@ -1,0 +1,35 @@
+Step	Stack												Input							Action
+1		$(0)												20*(20 + 2 *2) + (2 + 2) * 2$	shift
+2		$(0)20(1)											*(20 + 2 *2) + (2 + 2) * 2$		reduce using expr -> NUMBER
+3		$(0)expr(3)											*(20 + 2 *2) + (2 + 2) * 2$		shift
+4		$(0)expr(3)*(7)										(20 + 2 *2) + (2 + 2) * 2$		shift
+5		$(0)expr(3)*(7)((2)									20 + 2 *2) + (2 + 2) * 2$		shift
+6		$(0)expr(3)*(7)((2)20(1)							+ 2 *2) + (2 + 2) * 2$			reduce using expr -> NUMBER
+7		$(0)expr(3)*(7)((2)expr(4)							+ 2 *2) + (2 + 2) * 2$			s/r conflict. shift
+8		$(0)expr(3)*(7)((2)expr(4)+(5)						2 *2) + (2 + 2) * 2$			shift
+9		$(0)expr(3)*(7)((2)expr(4)+(5)2(1)					*2) + (2 + 2) * 2$				reduce using expr -> NUMBER
+10		$(0)expr(3)*(7)((2)expr(4)+(5)expr(10)				*2) + (2 + 2) * 2$				s/r conflict. shift
+11		$(0)expr(3)*(7)((2)expr(4)+(5)expr(10)*(7)			2) + (2 + 2) * 2$				shift
+12		$(0)expr(3)*(7)((2)expr(4)+(5)expr(10)*(7)2(1)		) + (2 + 2) * 2$				reduce using expr -> NUMBER
+13		$(0)expr(3)*(7)((2)expr(4)+(5)expr(10)*(7)expr(12)	) + (2 + 2) * 2$				reduce using expr -> expr * expr
+14		$(0)expr(3)*(7)((2)expr(4)+(5)expr(10)				) + (2 + 2) * 2$				reduce using expr -> expr + expr
+15		$(0)expr(3)*(7)((2)expr(4)							) + (2 + 2) * 2$				shift
+16		$(0)expr(3)*(7)((2)expr(4))(9)						+ (2 + 2) * 2$					reduce using expr -> ( expr )
+17		$(0)expr(3)*(7)expr(12)								+ (2 + 2) * 2$					s/r conflict. shift
+18		$(0)expr(3)*(7)expr(12)+(5)							(2 + 2) * 2$					shift
+19		$(0)expr(3)*(7)expr(12)+(5)((2)						2 + 2) * 2$						shift
+20		$(0)expr(3)*(7)expr(12)+(5)((2)2(1)					+ 2) * 2$						reduce using expr -> NUMBER
+21		$(0)expr(3)*(7)expr(12)+(5)((2)expr(4)				+ 2) * 2$						shift
+22		$(0)expr(3)*(7)expr(12)+(5)((2)expr(4)+(5)			2) * 2$							shift
+23		$(0)expr(3)*(7)expr(12)+(5)((2)expr(4)+(5)2(1)		) * 2$							reduce using expr -> NUMBER
+24		$(0)expr(3)*(7)expr(12)+(5)((2)expr(4)+(5)expr(10)	) * 2$							reduce using expr -> expr + expr
+25		$(0)expr(3)*(7)expr(12)+(5)((2)expr(4)				) * 2$							shift
+26		$(0)expr(3)*(7)expr(12)+(5)((2)expr(4))(9)			* 2$							reduce using expr -> ( expr )
+27		$(0)expr(3)*(7)expr(12)+(5)expr(10)					* 2$							s/r conflict. shift
+28		$(0)expr(3)*(7)expr(12)+(5)expr(10)*(7)				2$								shift
+29		$(0)expr(3)*(7)expr(12)+(5)expr(10)*(7)2(1)			$								reduce using expr -> NUMBER
+30		$(0)expr(3)*(7)expr(12)+(5)expr(10)*(7)expr(12)		$								reduce using expr -> expr * expr
+31		$(0)expr(3)*(7)expr(12)+(5)expr(10)					$								reduce using expr -> expr + expr
+32		$(0)expr(3)*(7)expr(12)								$								reduce using expr -> expr * expr
+33		$(0)expr(3)											$								reduce using Line -> expr
+34		$(0)Line(16)										$								accept

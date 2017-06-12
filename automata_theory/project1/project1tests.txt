@@ -1,0 +1,136 @@
+%%
+a, b
+q1, q2, q3, q4, q5, q6
+q1
+q6
+q1, b, q2
+q1, a, q4
+q2, a, q4
+q2, b, q3
+q3, a, q6
+q3, b, q3
+q4, a, q5
+q4, b, q2
+q5, a, q5
+q5, b, q6
+q6, a, q6
+q6, b, q6
+##
+bababbaa
+ababaabaab
+epsilon
+ababababa
+aaaaaaa
+bbbbbbb
+%%
+a, b, c
+q1, q2, q3, q4, q5, q6
+q1
+q4, q5, q6
+q1, a, q2
+q1, b, q3
+q1, c, q5
+q2, epsilon, q5
+q2, a, q1
+q3, a, q7
+q3, b, q6
+q4, c, q1
+q4, a, q6
+q5, epsilon, q3
+q6, a, q6
+q6, b, q6
+q6, c, q6
+##
+abcaaaa
+bcabbbbcc
+cccccbbbb
+%%
+a, b
+q1, q2, q3, q4
+q1
+q4
+q1, a, q2
+q1, b, q3
+q2, a, q1
+q2, a, q3
+q2, b, q4
+q3, c, q3
+q3, b, q4
+q4, a, q3
+q4, b, q4
+##
+abababbbbb
+aabbbaaa
+epsilon
+bbaabbaa
+%%
+a, b
+q1, q2, q3, q4, q5, q6
+q1
+q6
+q1, epsilon, q3
+q1, a, q2
+q1, b, q4
+q2, epsilon, q3
+q2, a, q5
+q2, b, q4
+q3, b, q6
+q3, b, q2
+q4, a, q2
+q4, b, q5
+q5, epsilon, q6
+##
+epsilon
+aa
+bbabbbaba
+bababaa
+bbbbbbbb
+abababba
+bbaabaa
+ababbaaabb
+%%
+a, b, c
+q1, q2, q3, q4, q5, q6
+q1
+q6
+q1, a, q4
+q1, epsilon, q2
+q1, b, q3
+q2, b, q5
+q2, epsilon, q3
+q3, a, q1
+q3, epsilon, q4
+q3, b, q6
+q4, a, q1
+q4, a, q2
+q4, epsilon, q5
+q5, b, q2
+q5, epsilon, q6
+q6, a, q6
+q6, b, q3
+q6, epsilon, q1
+##
+abaaabba
+bbaaabbba
+aaaaaaaa
+bbbbbb
+epsilon
+babababab
+aabbaabbbaa
+%%
+a, b
+q1, q2, q3, q4
+q1
+q4
+q1, a, q2
+q1, a, q3
+q2, b, q4
+q4, b, q4
+q3, epsilon, q2
+##
+bbbb
+aaaa
+abbbb
+a
+abbbaa
+%%

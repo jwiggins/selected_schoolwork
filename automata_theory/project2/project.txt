@@ -1,0 +1,519 @@
+[Section 1]
+
+$ ./a.out
+? 1+2+3+4-10
+0
+$ ./a.out
+? 5  - 1+   4
+      0
+$ ./a.out
+? (1-(2+(3-(4+5)-6)+7)-8)
+0
+$ ./a.out
+? 2-3+5
+-6
+$ ./a.out
+? (((100-10)-20)-(30+2))
+38
+$ ./a.out
+? 2-20-13-4-20
+11
+$ ./a.out
+? 2-(20-13)-4
+-1
+$ ./a.out
+? (20-(20 +( 2 -(2 + (2 + (2- 2))))))
+        2
+$ ./a.out
+? 10 - ((((2-(4-2)-30)+2) - 10)-2)
+    -10
+
+[Section 2]
+
+$ ./a.out
+? 1*2*3*4*5
+120
+$ ./a.out
+? 9*8/7
+9
+$ ./a.out
+? (1+2-3)*4/3
+0
+$ ./a.out
+? 2*3+5
+16
+$ ./a.out
+? (((100*10)-20)-(30*2))
+920
+$ ./a.out
+? 2-20-13-4/2
+-7
+$ ./a.out
+? 2-(20-13)-4/2
+-3
+$ ./a.out
+? 20*(20 + 2 *2) + (2 + 2) * 2
+         640
+$ ./a.out
+? 10 - ((((2*4-2-30)*3+2)*10)-2+3)
+  -3185
+
+[Section 4]
+
+(a)
+input: 20*(20 + 2 *2) + (2 + 2) * 2
+
+see attached printout
+
+(b)
+input: 10 - ((((2*4-2-30)*3+2)*10)-2+3)
+
+$ ./a.out
+Starting parse
+Entering state 0
+Reading a token: ? 10 - ((((2*4-2-30)*3+2)*10)-2+3)
+Next token is 257 (NUMBER)
+Shifting token 257 (NUMBER), Entering state 1
+Reducing via rule 2 (line 11), NUMBER  -> expr
+state stack now 0
+Entering state 3
+Reading a token: Next token is 45 ('-')
+Shifting token 45 ('-'), Entering state 6
+Reading a token: Next token is 40 ('(')
+Shifting token 40 ('('), Entering state 2
+Reading a token: Next token is 40 ('(')
+Shifting token 40 ('('), Entering state 2
+Reading a token: Next token is 40 ('(')
+Shifting token 40 ('('), Entering state 2
+Reading a token: Next token is 40 ('(')
+Shifting token 40 ('('), Entering state 2
+Reading a token: Next token is 257 (NUMBER)
+Shifting token 257 (NUMBER), Entering state 1
+Reducing via rule 2 (line 11), NUMBER  -> expr
+state stack now 0 3 6 2 2 2 2
+Entering state 4
+Reading a token: Next token is 42 ('*')
+Shifting token 42 ('*'), Entering state 7
+Reading a token: Next token is 257 (NUMBER)
+Shifting token 257 (NUMBER), Entering state 1
+Reducing via rule 2 (line 11), NUMBER  -> expr
+state stack now 0 3 6 2 2 2 2 4 7
+Entering state 12	<= s/r conflict (shift)
+Reading a token: Next token is 45 ('-')
+Shifting token 45 ('-'), Entering state 6
+Reading a token: Next token is 257 (NUMBER)
+Shifting token 257 (NUMBER), Entering state 1
+Reducing via rule 2 (line 11), NUMBER  -> expr
+state stack now 0 3 6 2 2 2 2 4 7 12 6
+Entering state 11	<= s/r conflict (shift)
+Reading a token: Next token is 45 ('-')
+Shifting token 45 ('-'), Entering state 6
+Reading a token: Next token is 257 (NUMBER)
+Shifting token 257 (NUMBER), Entering state 1
+Reducing via rule 2 (line 11), NUMBER  -> expr
+state stack now 0 3 6 2 2 2 2 4 7 12 6 11 6
+Entering state 11	<= s/r conflict (reduce)
+Reading a token: Next token is 41 (')')
+Reducing via rule 4 (line 13), expr '-' expr  -> expr
+state stack now 0 3 6 2 2 2 2 4 7 12 6
+Entering state 11
+Next token is 41 (')')
+Reducing via rule 4 (line 13), expr '-' expr  -> expr
+state stack now 0 3 6 2 2 2 2 4 7
+Entering state 12
+Next token is 41 (')')
+Reducing via rule 5 (line 14), expr '*' expr  -> expr
+state stack now 0 3 6 2 2 2 2
+Entering state 4
+Next token is 41 (')')
+Shifting token 41 (')'), Entering state 9
+Reducing via rule 7 (line 16), '(' expr ')'  -> expr
+state stack now 0 3 6 2 2 2
+Entering state 4
+Reading a token: Next token is 42 ('*')
+Shifting token 42 ('*'), Entering state 7
+Reading a token: Next token is 257 (NUMBER)
+Shifting token 257 (NUMBER), Entering state 1
+Reducing via rule 2 (line 11), NUMBER  -> expr
+state stack now 0 3 6 2 2 2 4 7
+Entering state 12	<= s/r conflict (shift)
+Reading a token: Next token is 43 ('+')
+Shifting token 43 ('+'), Entering state 5
+Reading a token: Next token is 257 (NUMBER)
+Shifting token 257 (NUMBER), Entering state 1
+Reducing via rule 2 (line 11), NUMBER  -> expr
+state stack now 0 3 6 2 2 2 4 7 12 5
+Entering state 10
+Reading a token: Next token is 41 (')')
+Reducing via rule 3 (line 12), expr '+' expr  -> expr
+state stack now 0 3 6 2 2 2 4 7
+Entering state 12
+Next token is 41 (')')
+Reducing via rule 5 (line 14), expr '*' expr  -> expr
+state stack now 0 3 6 2 2 2
+Entering state 4
+Next token is 41 (')')
+Shifting token 41 (')'), Entering state 9
+Reducing via rule 7 (line 16), '(' expr ')'  -> expr
+state stack now 0 3 6 2 2
+Entering state 4
+Reading a token: Next token is 42 ('*')
+Shifting token 42 ('*'), Entering state 7
+Reading a token: Next token is 257 (NUMBER)
+Shifting token 257 (NUMBER), Entering state 1
+Reducing via rule 2 (line 11), NUMBER  -> expr
+state stack now 0 3 6 2 2 4 7
+Entering state 12
+Reading a token: Next token is 41 (')')
+Reducing via rule 5 (line 14), expr '*' expr  -> expr
+state stack now 0 3 6 2 2
+Entering state 4
+Next token is 41 (')')
+Shifting token 41 (')'), Entering state 9
+Reducing via rule 7 (line 16), '(' expr ')'  -> expr
+state stack now 0 3 6 2
+Entering state 4
+Reading a token: Next token is 45 ('-')
+Shifting token 45 ('-'), Entering state 6
+Reading a token: Next token is 257 (NUMBER)
+Shifting token 257 (NUMBER), Entering state 1
+Reducing via rule 2 (line 11), NUMBER  -> expr
+state stack now 0 3 6 2 4 6
+Entering state 11	<= s/r conflict (shift)
+Reading a token: Next token is 43 ('+')
+Shifting token 43 ('+'), Entering state 5
+Reading a token: Next token is 257 (NUMBER)
+Shifting token 257 (NUMBER), Entering state 1
+Reducing via rule 2 (line 11), NUMBER  -> expr
+state stack now 0 3 6 2 4 6 11 5
+Entering state 10
+Reading a token: Next token is 41 (')')
+Reducing via rule 3 (line 12), expr '+' expr  -> expr
+state stack now 0 3 6 2 4 6
+Entering state 11
+Next token is 41 (')')
+Reducing via rule 4 (line 13), expr '-' expr  -> expr
+state stack now 0 3 6 2
+Entering state 4
+Next token is 41 (')')
+Shifting token 41 (')'), Entering state 9
+Reducing via rule 7 (line 16), '(' expr ')'  -> expr
+state stack now 0 3 6
+Entering state 11
+Reading a token: Now at end of input.
+Reducing via rule 4 (line 13), expr '-' expr  -> expr
+state stack now 0
+Entering state 3
+Now at end of input.
+Reducing via rule 1 (line 8), expr  -> Line
+  -3185
+state stack now 0
+Entering state 14
+Now at end of input.
+Shifting token 0 ($), Entering state 15
+Now at end of input.
+$
+
+[Section 5]
+
+input: 100-20-5*9+7
+
+$ ./a.out
+Starting parse
+Entering state 0
+Reading a token: ? 100-20-5*9+7
+Next token is 257 (NUMBER)
+Shifting token 257 (NUMBER), Entering state 1
+Reducing via rule 2 (line 11), NUMBER  -> expr
+state stack now 0
+Entering state 3
+Reading a token: Next token is 45 ('-')
+Shifting token 45 ('-'), Entering state 6
+Reading a token: Next token is 257 (NUMBER)
+Shifting token 257 (NUMBER), Entering state 1
+Reducing via rule 2 (line 11), NUMBER  -> expr
+state stack now 0 3 6
+Entering state 11	<= s/r conflict (shift)
+Reading a token: Next token is 45 ('-')
+Shifting token 45 ('-'), Entering state 6
+Reading a token: Next token is 257 (NUMBER)
+Shifting token 257 (NUMBER), Entering state 1
+Reducing via rule 2 (line 11), NUMBER  -> expr
+state stack now 0 3 6 11 6
+Entering state 11	<= s/r conflict (shift)
+Reading a token: Next token is 42 ('*')
+Shifting token 42 ('*'), Entering state 7
+Reading a token: Next token is 257 (NUMBER)
+Shifting token 257 (NUMBER), Entering state 1
+Reducing via rule 2 (line 11), NUMBER  -> expr
+state stack now 0 3 6 11 6 11 7
+Entering state 12	<= s/r conflict (shift)
+Reading a token: Next token is 43 ('+')
+Shifting token 43 ('+'), Entering state 5
+Reading a token: Next token is 257 (NUMBER)
+Shifting token 257 (NUMBER), Entering state 1
+Reducing via rule 2 (line 11), NUMBER  -> expr
+state stack now 0 3 6 11 6 11 7 12 5
+Entering state 10
+Reading a token: Now at end of input.
+Reducing via rule 3 (line 12), expr '+' expr  -> expr
+state stack now 0 3 6 11 6 11 7
+Entering state 12
+Now at end of input.
+Reducing via rule 5 (line 14), expr '*' expr  -> expr
+state stack now 0 3 6 11 6
+Entering state 11
+Now at end of input.
+Reducing via rule 4 (line 13), expr '-' expr  -> expr
+state stack now 0 3 6
+Entering state 11
+Now at end of input.
+Reducing via rule 4 (line 13), expr '-' expr  -> expr
+state stack now 0
+Entering state 3
+Now at end of input.
+Reducing via rule 1 (line 8), expr  -> Line
+160
+state stack now 0
+Entering state 14
+Now at end of input.
+Shifting token 0 ($), Entering state 15
+Now at end of input.
+$
+
+[Section 6]
+
+$ ./a.out
+Starting parse
+Entering state 0
+Reading a token: ? 100-20-5*9+7
+Next token is 257 (NUMBER)
+Shifting token 257 (NUMBER), Entering state 1
+Reducing via rule 2 (line 13), NUMBER  -> expr
+state stack now 0
+Entering state 3
+Reading a token: Next token is 45 ('-')
+Shifting token 45 ('-'), Entering state 6
+Reading a token: Next token is 257 (NUMBER)
+Shifting token 257 (NUMBER), Entering state 1
+Reducing via rule 2 (line 13), NUMBER  -> expr
+state stack now 0 3 6
+Entering state 11	<= s/r conflict (reduce)
+Reading a token: Next token is 45 ('-')
+Reducing via rule 4 (line 15), expr '-' expr  -> expr
+state stack now 0
+Entering state 3
+Next token is 45 ('-')
+Shifting token 45 ('-'), Entering state 6
+Reading a token: Next token is 257 (NUMBER)
+Shifting token 257 (NUMBER), Entering state 1
+Reducing via rule 2 (line 13), NUMBER  -> expr
+state stack now 0 3 6
+Entering state 11	<= s/r conflict (shift)
+Reading a token: Next token is 42 ('*')
+Shifting token 42 ('*'), Entering state 7
+Reading a token: Next token is 257 (NUMBER)
+Shifting token 257 (NUMBER), Entering state 1
+Reducing via rule 2 (line 13), NUMBER  -> expr
+state stack now 0 3 6 11 7
+Entering state 12	<= s/r conflict (reduce)
+Reducing via rule 5 (line 16), expr '*' expr  -> expr
+state stack now 0 3 6
+Entering state 11	<= s/r conflict (reduce)
+Reading a token: Next token is 43 ('+')
+Reducing via rule 4 (line 15), expr '-' expr  -> expr
+state stack now 0
+Entering state 3
+Next token is 43 ('+')
+Shifting token 43 ('+'), Entering state 5
+Reading a token: Next token is 257 (NUMBER)
+Shifting token 257 (NUMBER), Entering state 1
+Reducing via rule 2 (line 13), NUMBER  -> expr
+state stack now 0 3 5
+Entering state 10
+Reading a token: Now at end of input.
+Reducing via rule 3 (line 14), expr '+' expr  -> expr
+state stack now 0
+Entering state 3
+Now at end of input.
+Reducing via rule 1 (line 10), expr  -> Line
+42
+state stack now 0
+Entering state 14
+Now at end of input.
+Shifting token 0 ($), Entering state 15
+Now at end of input.
+$
+
+[Section 7]
+
+before:
+$ ./a.out
+? 42--17
+syntax error
+$ ./a.out
+? -14+7
+syntax error
+$
+
+after:
+$ ./a.out
+? 42--7
+syntax error. try again.
+? 42-7
+35
+$ ./a.out
+? -14+7
+syntax error. try again.
+? 14-7
+7
+$
+
+[Section 8]
+
+$ ./a.out
+? -14+7
+-7
+$ ./a.out
+? 100*8+-7
+793
+? -(14*3)+6
+-36
+$
+
+[Section 9]
+
+$ ./a.out
+? invert(-5+4)
+1
+$ ./a.out
+? invert(invert(-5+4))
+-1
+$ ./a.out
+? square(5)
+25
+$ ./a.out
+? invert(-square(square(6*(4+5))))
+8503056
+
+trace: (no conflicts noted)
+
+$ ./a.out
+Starting parse
+Entering state 0
+Reading a token: ? invert(-square(square(6*(4+5))))
+Next token is 258 (INVERT)
+Shifting token 258 (INVERT), Entering state 3
+Reducing via rule 12 (line 27), INVERT  -> invert
+state stack now 0
+Entering state 8
+Reading a token: Next token is 40 ('(')
+Shifting token 40 ('('), Entering state 17
+Reading a token: Next token is 45 ('-')
+Shifting token 45 ('-'), Entering state 5
+Reading a token: Next token is 259 (SQUARE)
+Shifting token 259 (SQUARE), Entering state 4
+Reducing via rule 13 (line 30), SQUARE  -> square
+state stack now 0 8 17 5
+Entering state 9
+Reading a token: Next token is 40 ('(')
+Shifting token 40 ('('), Entering state 18
+Reading a token: Next token is 259 (SQUARE)
+Shifting token 259 (SQUARE), Entering state 4
+Reducing via rule 13 (line 30), SQUARE  -> square
+state stack now 0 8 17 5 9 18
+Entering state 9
+Reading a token: Next token is 40 ('(')
+Shifting token 40 ('('), Entering state 18
+Reading a token: Next token is 257 (NUMBER)
+Shifting token 257 (NUMBER), Entering state 2
+Reducing via rule 3 (line 16), NUMBER  -> expr
+state stack now 0 8 17 5 9 18 9 18
+Entering state 25
+Reading a token: Next token is 42 ('*')
+Shifting token 42 ('*'), Entering state 15
+Reading a token: Next token is 40 ('(')
+Shifting token 40 ('('), Entering state 6
+Reading a token: Next token is 257 (NUMBER)
+Shifting token 257 (NUMBER), Entering state 2
+Reducing via rule 3 (line 16), NUMBER  -> expr
+state stack now 0 8 17 5 9 18 9 18 25 15 6
+Entering state 12
+Reading a token: Next token is 43 ('+')
+Shifting token 43 ('+'), Entering state 13
+Reading a token: Next token is 257 (NUMBER)
+Shifting token 257 (NUMBER), Entering state 2
+Reducing via rule 3 (line 16), NUMBER  -> expr
+state stack now 0 8 17 5 9 18 9 18 25 15 6 12 13
+Entering state 20
+Reading a token: Next token is 41 (')')
+Reducing via rule 4 (line 17), expr '+' expr  -> expr
+state stack now 0 8 17 5 9 18 9 18 25 15 6
+Entering state 12
+Next token is 41 (')')
+Shifting token 41 (')'), Entering state 19
+Reducing via rule 8 (line 21), '(' expr ')'  -> expr
+state stack now 0 8 17 5 9 18 9 18 25 15
+Entering state 22
+Reducing via rule 6 (line 19), expr '*' expr  -> expr
+state stack now 0 8 17 5 9 18 9 18
+Entering state 25
+Reading a token: Next token is 41 (')')
+Shifting token 41 (')'), Entering state 27
+Reducing via rule 11 (line 24), square '(' expr ')'  -> expr
+state stack now 0 8 17 5 9 18
+Entering state 25
+Reading a token: Next token is 41 (')')
+Shifting token 41 (')'), Entering state 27
+Reducing via rule 11 (line 24), square '(' expr ')'  -> expr
+state stack now 0 8 17 5
+Entering state 11
+Reducing via rule 9 (line 22), '-' expr  -> expr
+state stack now 0 8 17
+Entering state 24
+Reading a token: Next token is 41 (')')
+Shifting token 41 (')'), Entering state 26
+Reducing via rule 10 (line 23), invert '(' expr ')'  -> expr
+state stack now 0
+Entering state 7
+Reading a token: Now at end of input.
+Reducing via rule 1 (line 12), expr  -> Line
+8503056
+state stack now 0
+Entering state 28
+Now at end of input.
+Shifting token 0 ($), Entering state 29
+Now at end of input.
+$
+
+more input examples:
+
+$ ./a.out
+? invert(42+17*square(2)+invert(1))
+-109
+$ ./a.out
+? square(invert(square(invert(square(2)))))
+256
+$ ./a.out
+? square(square(2)*square(2))
+256
+$
+
+[Section 10]
+
+(1) Lexical anatysis is the parsing of strings to determine if they are in a language.
+It is also a means of breaking a string up into a list of symbols for syntactic analysis.
+Lex uses regular expressions to describe its input.
+
+(2) Syntactic analysis is the parsing of symbol strings to determine if they are in a
+grammar and how their parse tree is structured. Yacc uses BNF notation for its rules.
+
+(3) A token is an atomic unit in a grammar which is not an operator.
+
+(4) In an ambiguous grammar, shift/reduce and reduce/reduce conflicts occur.
+
+(5) Yacc resolves ambiguous grammars through the use of precedence rules and
+associativity keywords.
+
+(6) When processing input, yacc will either: shift a new symbol onto the stack or reduce
+what is on top of the stack.

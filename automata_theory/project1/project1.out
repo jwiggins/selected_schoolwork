@@ -1,0 +1,191 @@
+Hugs session for:
+/boot/beos/apps/hugs/lib/Prelude.hs
+project1.lhs
+Main> main
+name of input file: /boot/home/project1tests_1.txt
+Pick a machine to simulate (1,2,3,4,5 or 0 to exit):
+1
+Pick a string to test (or 0 to exit):
+1) aaaaaaa
+2) abababa
+3) bababaa
+4) bbbbbbb
+5) aaabbb
+6) input your own
+1
+String "aaaaaaa" not accepted.
+Pick a string to test (or 0 to exit):
+1) aaaaaaa
+2) abababa
+3) bababaa
+4) bbbbbbb
+5) aaabbb
+6) input your own
+2
+String "abababa" not accepted.
+Pick a string to test (or 0 to exit):
+1) aaaaaaa
+2) abababa
+3) bababaa
+4) bbbbbbb
+5) aaabbb
+6) input your own
+3
+String "bababaa" accepted.
+Pick a string to test (or 0 to exit):
+1) aaaaaaa
+2) abababa
+3) bababaa
+4) bbbbbbb
+5) aaabbb
+6) input your own
+4
+String "bbbbbbb" accepted.
+Pick a string to test (or 0 to exit):
+1) aaaaaaa
+2) abababa
+3) bababaa
+4) bbbbbbb
+5) aaabbb
+6) input your own
+5
+String "aaabbb" not accepted.
+Pick a string to test (or 0 to exit):
+1) aaaaaaa
+2) abababa
+3) bababaa
+4) bbbbbbb
+5) aaabbb
+6) input your own
+0
+Pick a machine to simulate (1,2,3,4,5 or 0 to exit):
+2
+Selected machine has a syntax error in its definition
+Pick a machine to simulate (1,2,3,4,5 or 0 to exit):
+3
+Selected machine has a syntax error in its definition
+Pick a machine to simulate (1,2,3,4,5 or 0 to exit):
+4
+Pick a string to test (or 0 to exit):
+1) aaaaaa
+2) epsilon
+3) ababab
+4) aaabaa
+5) bbbaaa
+6) input your own
+1
+String "aaaaaa" accepted.
+Pick a string to test (or 0 to exit):
+1) aaaaaa
+2) epsilon
+3) ababab
+4) aaabaa
+5) bbbaaa
+6) input your own
+2
+String "epsilon" not accepted.
+Pick a string to test (or 0 to exit):
+1) aaaaaa
+2) epsilon
+3) ababab
+4) aaabaa
+5) bbbaaa
+6) input your own
+3
+String "ababab" not accepted.
+Pick a string to test (or 0 to exit):
+1) aaaaaa
+2) epsilon
+3) ababab
+4) aaabaa
+5) bbbaaa
+6) input your own
+4
+String "aaabaa" accepted.
+Pick a string to test (or 0 to exit):
+1) aaaaaa
+2) epsilon
+3) ababab
+4) aaabaa
+5) bbbaaa
+6) input your own
+5
+String "bbbaaa" accepted.
+Pick a string to test (or 0 to exit):
+1) aaaaaa
+2) epsilon
+3) ababab
+4) aaabaa
+5) bbbaaa
+6) input your own
+0
+Pick a machine to simulate (1,2,3,4,5 or 0 to exit):
+5
+Pick a string to test (or 0 to exit):
+1) ababab
+2) aabbaa
+3) epsilon
+4) aaaaaa
+5) bbbbb
+6) input your own
+1
+String "ababab" accepted.
+Pick a string to test (or 0 to exit):
+1) ababab
+2) aabbaa
+3) epsilon
+4) aaaaaa
+5) bbbbb
+6) input your own
+2
+String "aabbaa" not accepted.
+Pick a string to test (or 0 to exit):
+1) ababab
+2) aabbaa
+3) epsilon
+4) aaaaaa
+5) bbbbb
+6) input your own
+3
+String "epsilon" accepted.
+Pick a string to test (or 0 to exit):
+1) ababab
+2) aabbaa
+3) epsilon
+4) aaaaaa
+5) bbbbb
+6) input your own
+4
+String "aaaaaa" not accepted.
+Pick a string to test (or 0 to exit):
+1) ababab
+2) aabbaa
+3) epsilon
+4) aaaaaa
+5) bbbbb
+6) input your own
+5
+String "bbbbb" accepted.
+Pick a string to test (or 0 to exit):
+1) ababab
+2) aabbaa
+3) epsilon
+4) aaaaaa
+5) bbbbb
+6) input your own
+6
+even strings which obviously aren't recognized
+String "even strings which obviously aren't recognized" not accepted.
+Pick a string to test (or 0 to exit):
+1) ababab
+2) aabbaa
+3) epsilon
+4) aaaaaa
+5) bbbbb
+6) input your own
+0
+Pick a machine to simulate (1,2,3,4,5 or 0 to exit):
+0
+Done
+
+Main>

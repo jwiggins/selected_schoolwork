@@ -1,0 +1,104 @@
+%%
+a, b
+q1, q2, q3, q4, q5
+q1
+q4, q5
+q1, a, q3
+q1, b, q2
+q2, a, q2
+q2, b, q4
+q3, a, q5
+q4, a, q4
+q4, b, q5
+q5, a, q3
+q5, b, q5
+##
+aaaaaaa
+abababa
+bababaa
+bbbbbbb
+aaabbb
+%%
+a, b, c
+q1, q2, q3, q4, q5
+q1
+q1, q5
+q1, a, q2
+q1, b, q3
+q2, a, q1
+q2, b, q4
+q3, a, q6
+q4, b, q5
+q3, b, q5
+q4, a, q4
+q5, b, q5
+##
+abab
+baba
+aaaa
+bbbb
+aabb
+%%
+a, b
+q1, q2, q3, q4, q5
+q1
+q5
+q1, a, q2
+q1, b, q3
+q2, a, q4
+q2, c, q3
+q3, b, q4
+q4, a, q5
+q4, b, q4
+q5, a, q5
+##
+aaba
+bbab
+aaaa
+bbbb
+ababab
+%%
+a, b
+q1, q2, q3, q4, q5
+q1
+q5
+q1, a, q2
+q1, b, q1
+q1, a, q3
+q2, epsilon, q3
+q2, a, q4
+q2, a , q2
+q3, b, q1
+q3, a, q5
+q4, b, q5
+q4, epsilon, q1
+##
+aaaaaa
+epsilon
+ababab
+aaabaa
+bbbaaa
+%%
+a, b
+q1, q2, q3, q4, q5
+q1
+q5
+q1, a, q1
+q1, b, q3
+q1, epsilon, q2
+q2, epsilon, q4
+q2, a, q3
+q2, b, q4
+q3, epsilon, q5
+q3, b, q3
+q4, epsilon, q3
+q4, a, q1
+q4, b, q5
+q5, epsilon, q1
+##
+ababab
+aabbaa
+epsilon
+aaaaaa
+bbbbb
+%%
