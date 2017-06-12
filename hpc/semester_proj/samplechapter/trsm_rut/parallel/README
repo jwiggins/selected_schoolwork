@@ -1,0 +1,58 @@
+To get this sample test routine running:
+
+- Copy all of this directory to your directory
+- make
+- mpprun -n 4 $(WORK)/test_trmm.x
+Sample session:
+     enter distr. block size:
+     16
+     nb_distr = 16
+     enter alg. block size:
+     32
+     nb_alg = 32
+     enter datatype:
+     -1 = quit
+      0 = float
+      1 = double
+      2 = complex
+      3 = double complex
+     1
+     itype = 1
+     enter n:
+     1000
+     n = 1000
+     1000 time = 1.186386, MFLOPS/node =   210.7239 
+     -1 = quit
+      0 = float
+      1 = double
+      2 = complex
+      3 = double complex
+     -1
+
+To port your own FLAME code to PLAPACK:
+A. Change the Makefile
+B. Change test_trmm.c so it tests your function
+C. Start with the blocked or recursive version of the FLAME
+   routine.
+     1. Change FLAME.h to PLA.h
+     
+     2. Change "FLA" to "PLA"
+     
+     3. Initialize PLA_Obj's to NULL
+     
+     4. insert  PLA_Obj MINUS_ONE=NULL, ZERO=NULL, ONE=NULL;
+     
+     5. insert
+       PLA_Create_constants_conf_to( A, &MINUS_ONE, &ZERO, &ONE );
+     
+     6. Free any objects you create at the end of the routine.
+     
+     7. Resolve issues with PLA_SIDE_LEFT PLA_LEFT
+     e.g.
+       PLA_Obj_free( &ABR );
+       PLA_Obj_free( &A10 );
+     
+     8. Replace call to unblocked with equivalent
+     PLAPACK BLAS call.
+
+

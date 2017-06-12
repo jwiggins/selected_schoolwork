@@ -1,0 +1,64 @@
+In this directory, you will find the
+following routines:
+
+fill_matrix:  a routine for filling a matrix
+              with random numbers
+
+Trmm_left_lower_notrans_lev2.c:
+              The unblocked lower triangular multiplication 
+              routine from Chapter 4.
+
+Trmm_left_lower_notrans.c:
+              The blocked lower triangular multiplication 
+              routine from Chapter 4.
+
+test_all.c:   A driver for testing the accuracy and performance
+              of all level-3 BLAS
+
+test_ltrmm.c: A driver for testing the accuracy and performance
+              of Trmm_left_lower_notrans and 
+              Trmm_left_lower_notrans_lev2
+
+Notice that test_ltrmm was derived from test_all.c by 
+              editing that file.
+
+To run test_all (a test of all level-3 BLAS)
+
+make test_all
+./test_all.x
+operation (0 = symm, 1 = syrk, 2 = syr2k, 3 = trmm, 4 = trsm, -1 = quit):3
+iop = 3
+side (0 = Left, 1 = Right ):0
+uplo (0 = Lower, 1 = Upper ):0
+transa, (0 = No transpose, 1 = Transpose):0
+unit diag ( 0 = No, 1 = Yes):0
+enter m, n:400 400
+
+L L N N   400   400       257.5  354.4  4.47e-08
+L L N N   400   400       298.9  354.7  4.47e-08
+L L N N   400   400       298.4  354.3  4.47e-08
+L L N N   400   400       299.1  354.7  4.47e-08
+operation (0 = symm, 1 = syrk, 2 = syr2k, 3 = trmm, 4 = trsm, -1 = quit):-1
+
+
+
+To run test_ltrmm (a test of my lower triangular matrix 
+multiplication algorithms):
+
+make test_ltrmm
+./test_ltrmm
+
+number of repeats:4
+enter m, n, nb_alg:400 400 32
+
+Performance in MFLOPS/sec (1e6 flops per second)
+
+   m    n  nb    REF  FLAME   diff      lev2   diff   blocked   diff
+====================================================================
+ 400  400  32  306.8  284.2  1.86e-08   48.0  1.19e-07  237.6  1.49e-08
+ 400  400  32  347.2  261.5  1.86e-08   46.8  1.19e-07  237.0  1.49e-08
+ 400  400  32  348.2  298.0  1.86e-08   41.9  1.19e-07  241.4  1.49e-08
+ 400  400  32  353.7  298.9  1.86e-08   49.1  1.19e-07  241.5  1.49e-08
+enter m, n, nb_alg:-1
+0 0
+

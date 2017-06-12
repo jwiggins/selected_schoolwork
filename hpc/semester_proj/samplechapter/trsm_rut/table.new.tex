@@ -1,0 +1,111 @@
+\begin{figure}
+\begin{center}
+\footnotesize
+% \begin{sideways}
+{
+\setlength{\tabcolsep}{4pt}
+\begin{tabular}{| c | c | c || c | p{1.1in} | c | } \hline
+\multicolumn{3}{| c ||}{Computed?} & $ P_X: $
+& & \\ \cline{1-3}
+
+\footnotesize
+$ \hat{B}_{R} U_{BR}^{-T} $ & 
+\footnotesize
+$ \hat{B}_L - B_R U_{TR}^{T} $ & 
+\footnotesize
+$ U_{TL}^{-T} $ &
+$ \FlaOneByTwo{ B_L}{B_R} =  $ & Comment &
+\footnotesize Feasible? \\ \hline \hline
+NO & NO & NO &
+\footnotesize
+$
+\FlaOneByTwo{ \hat{B}_L }
+            { \hat{B}_R }
+$ 
+&
+Infeasible (Reason 2).
+&
+NO
+\\ \hline
+%
+%
+YES & NO & NO &
+\footnotesize
+$
+\FlaOneByTwo{ \hat{B}_{L} }
+            { \hat{B}_R U_{BR}^{-T} }
+$ 
+&
+Loop Invariant 1
+& 
+YES
+\\ \hline
+NO & YES & NO &
+%
+%
+\footnotesize
+$
+\FlaOneByTwo{ \hat{B}_L - B_R U_{TR}^T }
+            { \hat{B}_R  }
+$ 
+&
+Infeasible (Reason 1).
+& 
+NO
+\\ \hline
+%
+%
+YES & YES & NO &
+\footnotesize
+$
+\FlaOneByTwo{ \hat{B}_L - B_R U_{TR}^T }
+            { \hat{B}_R U_{BR}^{-T} }
+$ 
+&
+Loop Invariant 2
+&
+YES
+\\ \hline
+NO & YES & YES &
+%
+%
+\footnotesize
+$
+\FlaOneByTwo{ ( \hat{B}_L - B_R U_{TR}^{-T} ) U_{TL}^{-T} }
+            { \hat{B}_R }
+$ 
+&
+Infeasible (Reason 1).
+&
+NO
+\\ \hline
+YES & YES & YES &
+%
+%
+\footnotesize
+$
+\FlaOneByTwo{ ( \hat{B}_L - B_R U_{TR}^{-T} ) U_{TL}^{-T} }
+            { \hat{B}_R U_{BR}^{-T} }
+$ 
+&
+Infeasible (Reason 3).
+&
+NO
+\\ \hline
+%\\ \hline
+%
+%
+\end{tabular}
+}
+% \end{sideways}
+\end{center}
+\caption{Possible loop-invariants when partitioning
+$ U $ into quadrants.
+Here $ P_X $ is the most prominent part of the loop-invariant
+$ \PInv $.
+The reasons for declaring the loop-invariant infeasible
+refer to the reasons given on page 11 of the handout.
+The reason for rejecting the loop-invariant may not be
+the only reason for doing so.}
+\label{fig:TRSM_RUT_variants}
+\end{figure}

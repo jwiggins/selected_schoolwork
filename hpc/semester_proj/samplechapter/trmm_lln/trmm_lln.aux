@@ -1,0 +1,82 @@
+\relax 
+\@writefile{toc}{\contentsline {chapter}{\numberline {1}Triangular Matrix Multiplication\\ $ B \leftarrow L B $}{3}}
+\@writefile{lof}{\addvspace {10\p@ }}
+\@writefile{lot}{\addvspace {10\p@ }}
+\newlabel{chapter:trmm_lln}{{1}{3}}
+\@writefile{toc}{ {by {\bf  Paolo Bientinesi and Robert A. van de Geijn} } }
+\@writefile{toc}{\contentsline {section}{\numberline {1.1}Algorithms that start by partitioning $ L $}{3}}
+\newlabel{sec:trmm_lln:L}{{1.1}{3}}
+\@writefile{lof}{\contentsline {figure}{\numberline {1.1}{\ignorespaces Possible loop-invariants when partitioning $ L $ into quadrants. Here $ P_X $ is the most prominent part of the loop-invariant $ P_{\rm  inv}$. The reasons for declaring the loop-invariant infeasible refer to the reasons given on page 11 of the handout. The reason for rejecting the loop-invariant may not be the only reason for doing so.}}{4}}
+\newlabel{fig:LTRMM_LLN_example}{{1.1}{4}}
+\newlabel{eqn:ltrmm_lln}{{1.1}{4}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {1.1.1}Loop-invariant 1}{4}}
+\newlabel{eqn:ltrmm_lln:p1}{{1.2}{4}}
+\newlabel{eqn:ltrmm_lln:p2}{{1.3}{5}}
+\@writefile{toc}{\contentsline {subsubsection}{Unblocked algorithm}{5}}
+\newlabel{eqn:ltrmm_lln:bu}{{1.4}{5}}
+\newlabel{eqn:ltrmm_lln:au}{{1.5}{5}}
+\@writefile{toc}{\contentsline {subsubsection}{Blocked Algorithms}{5}}
+\@writefile{lof}{\contentsline {figure}{\numberline {1.2}{\ignorespaces Annotated algorithm for the lower triangular matrix multiplication example.}}{6}}
+\newlabel{fig:ws:ltrmm_lln}{{1.2}{6}}
+\@writefile{lof}{\contentsline {figure}{\numberline {1.3}{\ignorespaces Unblocked algorithm for loop-invariant 1.}}{7}}
+\newlabel{fig:alg:ltrmm_lln}{{1.3}{7}}
+\@writefile{toc}{\contentsline {subsubsection}{Implementation}{7}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {1.1.2}Loop-invariant 2}{7}}
+\newlabel{eqn:ltrmm_lln:p3}{{1.6}{7}}
+\@writefile{lof}{\contentsline {figure}{\numberline {1.4}{\ignorespaces Annotated blocked algorithm for loop-invariant 1.}}{8}}
+\newlabel{fig:ws:ltrmm_lln_blk}{{1.4}{8}}
+\@writefile{lof}{\contentsline {figure}{\numberline {1.5}{\ignorespaces Unblocked algorithm for loop-invariants 1 and 2 using FLAME.}}{8}}
+\newlabel{fig:trmm_lln_lazy_unb}{{1.5}{8}}
+\@writefile{lof}{\contentsline {figure}{\numberline {1.6}{\ignorespaces Blocked algorithm for loop-invariants 1 and 2 using FLAME. Recursion is optionally supported.}}{9}}
+\newlabel{fig:trmm_lln_lazy_blk}{{1.6}{9}}
+\@writefile{toc}{\contentsline {subsubsection}{Unblocked algorithm}{9}}
+\newlabel{eqn:ltrmm_lln:var2:before}{{1.8}{9}}
+\newlabel{eqn:ltrmm_lln:var2:after}{{1.9}{9}}
+\@writefile{toc}{\contentsline {subsubsection}{Blocked Algorithms}{9}}
+\@writefile{toc}{\contentsline {subsubsection}{Implementation}{9}}
+\@writefile{toc}{\contentsline {section}{\numberline {1.2}Algorithms that start by partitioning $ B $}{9}}
+\@writefile{lof}{\contentsline {figure}{\numberline {1.7}{\ignorespaces Annotated unblocked algorithm for loop-invariant 2.}}{10}}
+\newlabel{fig:ws:ltrmm_lln:var2}{{1.7}{10}}
+\@writefile{lof}{\contentsline {figure}{\numberline {1.8}{\ignorespaces Annotated blocked algorithm for loop-invariant 2.}}{11}}
+\newlabel{fig:ws:ltrmm_lln:var2:blk}{{1.8}{11}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {1.2.1}Horizontal partitioning of $ B$}{12}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {1.2.2}Vertical partitioning of $ B$}{12}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {1.2.3}Implementation}{12}}
+\@writefile{toc}{\contentsline {section}{\numberline {1.3}Performance}{12}}
+\@writefile{lof}{\contentsline {figure}{\numberline {1.9}{\ignorespaces Annotated blocked algorithm for the lower triangular matrix multiplication example.}}{13}}
+\newlabel{fig:ws:ltrmm_lln3_blk}{{1.9}{13}}
+\@writefile{lof}{\contentsline {figure}{\numberline {1.10}{\ignorespaces Blocked algorithm for loop-invariants 3 using FLAME.}}{13}}
+\newlabel{fig:trmm_lln_right}{{1.10}{13}}
+\@writefile{lof}{\contentsline {figure}{\numberline {1.11}{\ignorespaces Performance of the row lazy (left) and lazy (right) (w.r.t. $ L $) lower triangular matrix-matrix multiplication algorithms for a block size of $ 80 $ (top) and $ 160 $ (bottom). For these experiments, the ATLAS matrix-matrix multiplication kernel was used.}}{15}}
+\newlabel{fig:trmm_lln:lazy-row-lazy:ATLAS}{{1.11}{15}}
+\@writefile{lof}{\contentsline {figure}{\numberline {1.12}{\ignorespaces Performance of the row lazy (left) and lazy (right) (w.r.t. $ L $) lower triangular matrix-matrix multiplication algorithms for a block size of $ 32 $ (top) and $ 128 $ (bottom). For these experiments, the ITXGEMM matrix-matrix multiplication kernel was used.}}{16}}
+\newlabel{fig:trmm_lln:lazy-row-lazy:ITXGEMM}{{1.12}{16}}
+\@writefile{lof}{\contentsline {figure}{\numberline {1.13}{\ignorespaces Performance of the right-moving (w.r.t. $ B $) triangular matrix-matrix multiplication algorithms for a block size of $ 32 $ (left) and $ 128 $ (right), using ITXGEMM.}}{17}}
+\newlabel{fig:trmm_lln:right-moving}{{1.13}{17}}
+\@setckpt{trmm_lln/trmm_lln}{
+\setcounter{page}{18}
+\setcounter{equation}{9}
+\setcounter{enumi}{0}
+\setcounter{enumii}{0}
+\setcounter{enumiii}{0}
+\setcounter{enumiv}{0}
+\setcounter{footnote}{0}
+\setcounter{mpfootnote}{0}
+\setcounter{part}{0}
+\setcounter{chapter}{1}
+\setcounter{section}{3}
+\setcounter{subsection}{0}
+\setcounter{subsubsection}{0}
+\setcounter{paragraph}{0}
+\setcounter{subparagraph}{0}
+\setcounter{figure}{13}
+\setcounter{table}{0}
+\setcounter{r@tfl@t}{0}
+\setcounter{note}{0}
+\setcounter{algorithm}{0}
+\setcounter{theorem}{0}
+\setcounter{lemma}{0}
+\setcounter{corollary}{0}
+\setcounter{definition}{0}
+\setcounter{stepnumber}{0}
+}

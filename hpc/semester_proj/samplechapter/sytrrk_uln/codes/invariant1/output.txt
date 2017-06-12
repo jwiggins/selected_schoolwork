@@ -1,0 +1,42 @@
+% callibrate clock: elapsed time = 0.924511
+% modify dclock_s.s in the obvious way
+% number of repeats:
+
+% Note: the columns marked with diff give
+% the difference in the results between the reference
+% implementation and your implementation.
+% This should be small
+
+% Performance in MFLOPS/sec (1e6 flops per second)
+
+%   n   n  nb    REF unblocked diff   blocked   diff   recursive   diff
+% =======================================================================
+data = [
+% enter n, nb_alg:
+  50   50  40    3.4    9.2  7.28e-12   34.1  7.28e-12   40.3  7.28e-12
+% enter n, nb_alg:
+ 100  100  40   15.9  134.5  1.16e-10  102.7  5.82e-11   97.7  5.82e-11
+% enter n, nb_alg:
+ 150  150  40   82.3  173.5  2.33e-10  148.9  2.33e-10  140.1  2.33e-10
+% enter n, nb_alg:
+ 200  200  40   86.0  187.7  9.31e-10  175.1  4.66e-10  172.6  4.66e-10
+% enter n, nb_alg:
+ 250  250  40   90.1  210.2  1.86e-09  199.9  1.86e-09  186.9  1.86e-09
+% enter n, nb_alg:
+ 500  500  40  109.9  137.0  2.24e-08  250.3  1.49e-08  247.2  1.49e-08
+% enter n, nb_alg:
+ 750  750  40  118.4  100.0  8.94e-08  280.7  2.98e-08  278.8  2.98e-08
+% enter n, nb_alg:
+1000 1000  40  124.9   98.8  1.79e-07  293.1  1.19e-07  292.4  1.19e-07
+% enter n, nb_alg:
+];
+
+plot( data( :,1 ), data( :, 4 ), '-x', ...
+      data( :,1 ), data( :, 5 ), '-*', ...
+      data( :,1 ), data( :, 7 ), '-o', ...
+      data( :,1 ), data( :, 9 ), '-+' ); 
+legend( 'Reference', 'unblocked', 'blocked', 'recursive', 5 ); 
+xlabel( 'matrix dimension n' );
+ylabel( 'MFLOPS/sec.' );
+axis( [ 0 1000 0 600 ] ); 
+print -depsc2 sytrrk_uln_inv1.eps

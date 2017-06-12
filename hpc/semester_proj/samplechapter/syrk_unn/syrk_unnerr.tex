@@ -1,0 +1,1360 @@
+% The following commands help in generating the index
+\index{index}{symmetric rank-k update}%
+\index{op}{symmetric rank-k update!$ C \leftarrow A A^T + \hat{C} $|( }%
+
+% Name of the chapter
+
+\chapter{Symmetric Rank-k Update \\
+$ C \leftarrow A A^T + \hat{C} $ \\
+$ C $ symmetric, stored in upper triangle
+}
+\label{chapter:syrk_un}
+
+% Authors
+
+\ChapterAuthor{
+\index{author}{Chen, Katherine}
+Katherine Chen
+\\[0.1in]
+\index{author}{Ho, Mandy}
+Mandy Ho
+\\[0.1in]
+\index{author}{Lai, Ingrid}
+Ingrid Lai
+}
+
+% Add the names of the authors to the table of contents
+
+\addtocontents{toc}{ {by {\bf Katherine Chen, Mandy Ho, and Ingrid Lai} } 4/21/02 - finished most of the first 2 pages, changed figure 2.1}
+
+In this chapter, we discuss the implementation of the symmetric rank-k update
+\[
+C \leftarrow A A^T + \hat{C}
+\]
+where $ C $ is an $ n \times n $ upper triangular matrix and $ A $ is
+$ n \times k $.  We will overwrite $ C $ with the result without
+requiring a workarray.  We start by deriving a number of different
+sequential algorithms.  Subsequently, we show how to code the
+algorithms using FLAME.  Later in the chapter the parallel
+implementation of the operation is discussed.
+
+The variables for the symmetric rank-k update can be
+described by the precondition
+\[
+\PPre:
+C = \hat{C} \wedge \SameSize( C, \hat{C} ) \wedge \UpTr( C ) \wedge
+\RowDim( A )=\RowDim(\hat{C}) \wedge \ColDim( A )=\ColDim(\hat{C}),
+\]
+where $ \hat{B} $ indicates the original contents of $ B $.  Here the
+predicate $ \LowTr( A ) $ is true iff $ A $ is a lower triangular
+matrix.  The functions $ \RowDim( A ) $ and $ \ColDim( A ) $ return
+the row and column dimension of $ A $, respectively.  The operation to
+be performed $ C \becomes A A^T + C $ translates to the postcondition $
+\PPost: C = A A^T + \hat{C} $.
+
+\section{Algorithms That Start By Partitioning $ C $}
+\label{sec:trmm_lln:L}
+
+Let us start by partitioning matrix $ C $.  Since it is triangular, we
+partition it like
+\[
+C \rightarrow \FlaTwoByTwo{ C_{TL} }        { C_{TR} }
+                          { \undetermined } { C_{BR} },
+\]
+where $ C_{TL} $ is square so that both submatrices on the diagonal
+are themselves upper triangular.
+
+Substituting the partitioning of $ C $ into the postcondition yields
+\[
+\FlaTwoByTwo{ C_{TL} }        { C_{TR} }
+            { \undetermined } { C_{BR} }
+= 
+( \mbox{some partitioning of }{A} )
+( \mbox{some partitioning of }{A^T} )
++
+\FlaTwoByTwo{ \hat{C}_{TL} }  { \hat{C}_{TR} }
+            { \undetermined } { \hat{C}_{BR} }
+\]
+This suggests that $ A $ should be partitioned
+horizontally  into two submatrices, or into quadrants and that $ A^T $ should be partitioned vertically into two submatrices.  Let us consider
+the case where $ A $ and $ A^T $ are partitioned as described above.  Then
+\[
+\FlaTwoByTwo{ C_{TL} }        { C_{TR} }
+            { \undetermined } { C_{BR} }
+= 
+\FlaTwoByOne{ A_T }
+            { A_B }
+
+\FlaTwoByOne{ {A_T}^T }
+            { {A_B}^T }
++
+\FlaTwoByTwo{ \hat{C}_{TL} }   { \hat{C}_{TR} }
+            { \undetermined }  { \hat{C}_{BR} }
+\]
+In order to be able to multiply the matrices on the right out and to
+be able to then set the submatrices on the left equal to the result on
+the right we find that the following must hold:
+\[
+\ColDim( C_{TL} ) = \RowDim( \hat{A}_T ) 
+\wedge
+\RowDim( C_{TL} ) = \RowDim( {A}_T ) 
+\]
+which in turn implies that $ \RowDim( B_T )= \RowDim( \hat{B}_T ) $
+since $ L_{TL} $ is a square matrix.  This is good news since this
+means $ B $ and $ \hat{B} $ are partitioned somae way, which is
+important since $ B $ and $ \hat{B} $ will reference the same matrix ($
+B $ is being overwritten).  Substituting the partitioned matrices into
+the postcondition we find
+\[
+\FlaTwoByOne{ B_T }
+            { B_B }
+=
+\FlaTwoByTwo{ U_{TL} }        { U_{TR} }
+            { \undetermined } { U_{BR} }
+\FlaTwoByOne{ \hat{B}_T }
+            { \hat{B}_B }
+=
+\FlaTwoByOne{ U_{TL} \hat{B}_T + U_{TR} \hat{B}_B}
+            { U_{BR} \hat{B}_B }
+\]
+which yields the equalities
+\begin{equation}
+\label{eqn:ltrmm_lln}
+\begin{array}{r c l}
+B_T &=& U_{TL} \hat{B}_T + U_{TR} \hat{B}_B \\ \hline \hline
+B_B &=& U_{BR} \hat{B}_B
+\end{array}
+\end{equation}
+
+% Insert the table of possible loop-invariants from
+% file syrk_un/table.new.tex
+
+\input{syrk_un/table.new}
+From (\ref{eqn:ltrmm_lln}) we conclude that the operations to be
+performed are $ U_{TL} \hat{B}_T $, $ U_{TR} \hat{B}_B $, and $ U_{BR}
+\hat{B}_B $.  At an intermediate stage, each of these either has or
+has not already been computed, leading to the $ 2^3 = 8 $ possible
+loop-invariants tabulated in Fig.~\ref{fig:LTRMM_LLNexample}.
+
+\subsection{Loop-invariant 1}
+
+We will first examine the (feasible) loop-invariant
+\begin{eqnarray}
+\label{eqn:ltrmm_lln:p1}
+\PInv: 
+\lefteqn{
+\FlaTwoByOne{ B_T}{B_B} =
+\FlaTwoByOne{ \hat{B}_T }
+            { L_{BR} \hat{B}_B }
+\wedge
+\LowTr( L_{TL} ) } \wedge \\
+\nonumber
+& & 
+\ColDim( L_{TL} ) = \RowDim( \hat{B}_T ) 
+\wedge
+\RowDim( L_{TL} ) = \RowDim( {B}_T ) 
+\end{eqnarray}
+For short we will write
+\begin{equation}
+\label{eqn:ltrmm_lln:p2}
+\PInv: \FlaTwoByOne{ B_T}{B_B} =
+\FlaTwoByOne{ \hat{B}_T }
+            { L_{BR} \hat{B} }
+\wedge
+\ldots
+\end{equation}
+for (\ref{eqn:ltrmm_lln:p1}).
+
+Comparing the loop-invariant in (\ref{eqn:ltrmm_lln:p2}) with the
+postcondition $ B = L \hat{B} $ we see that {\em if} $L=L_{BR}$, $ B =
+B_B $, and $ \hat{B} = \hat{B}_B $ then the loop-invariant implies the
+postcondition, i.e., that the desired result has been computed.
+Notice that $ \SameSize( L, L_{BR} ) \wedge \PInv $ implies $ L =
+L_{BR} $, $ B = B_B $ and $ \hat{B}=\hat{B}_B $ since the partitioned
+matrices are references into the original matrices $ L $, $ B $, and $
+\hat{B} $.  Thus, the loop-guard $ G: \neg \SameSize( L, L_{BR} ) $
+has the desired property.
+
+Consider the initialization in Step 4 in Fig.~\ref{fig:ws:ltrmm_lln}.
+The fact that for this partitioning of $ B $, $ \hat{B} $, and $ L $,
+$
+\FlaTwoByOne{ \hat{B}_T}
+            { \hat{B}_B} =
+\FlaTwoByOne{ \hat{B}_T}
+            { L_{BR} \hat{B}_B } $ and the precondition implies the
+other parts of the loop-invariant, this initialization has the desired
+properties.
+
+Loop-guard $ G $ indicates that eventually $ L_{BR} $ should equal all
+of $ L $, at which point $ G $ becomes {\em false} and the loop is
+exited.  After the initialization, $ L_{BR} $ is $ 0 \times 0 $.
+Thus, the repartitioning should be such that as the computation
+proceeds rows and columns are subtracted from $ L_{TL} $ and added to
+$ L_{BR} $ while updating $ L_{BL} $ consistently with this.
+
+\subsubsection{Unblocked algorithm}
+
+If we move the partitionings by individual rows and columns, we obtain
+the repartitioning and redefinition of the partitioning in Steps 5a
+and 5b in Fig.~\ref{fig:ws:ltrmm_lln}.  The repartitionings in Step 5a
+in Fig.~\ref{fig:ws:ltrmm_lln} result in the state
+\begin{equation}
+\label{eqn:ltrmm_lln:bu}
+\QBefore: 
+\FlaTwoByOne{ 
+\FlaTwoByOneSingleLine{ B_0 }{ b_1^T }
+}
+{
+B_2
+} =
+\FlaTwoByOne{ 
+\FlaTwoByOneSingleLine{ \hat{B}_0 }{ \hat{b}_1^T }
+}
+{
+L_{22} \hat{B}_2
+}
+\wedge \ldots
+\end{equation}
+before the update.  The redefinition in Step 5b in
+Fig.~\ref{fig:ws:ltrmm_lln} means that the following state must result
+from the update:
+\[
+\QAfter: 
+\FlaTwoByOne{ 
+B_0
+}
+{
+\FlaTwoByOneSingleLine{ b_1^T }{ B_2 }
+} =
+\FlaTwoByOne{ 
+\hat{B}_0
+}
+{
+\FlaTwoByTwoSingleLine{ \lambda_{11} }{ 0 }
+                      { l_{21} }{ L_{22} }
+\FlaTwoByOneSingleLine{ \hat{b}_1^T }{ \hat{B}_2 }
+}
+\wedge \ldots
+\]
+Multiplying out the triangular matrix multiplication yields
+\begin{equation}
+\label{eqn:ltrmm_lln:au}
+\QAfter: 
+\FlaTwoByOne{ 
+B_0
+}
+{
+\FlaTwoByOneSingleLine{ b_1^T }{ B_2 }
+} =
+\FlaTwoByOne{ 
+\hat{B}_0
+}
+{
+\FlaTwoByOneSingleLine{ \lambda_{11} \hat{b}_1^T }{ l_{21} \hat{b}_1^T + L_{22} \hat{B}_2 }
+}
+\wedge \ldots
+\end{equation}
+Comparing Eqns.~\ref{eqn:ltrmm_lln:bu} and~\ref{eqn:ltrmm_lln:au} we
+find that the updates
+\begin{eqnarray*}
+& B_2 & \becomes l_{21} b_1^T + B_2 \\
+& b_1^T & \becomes \lambda_{11} b_1^T 
+\end{eqnarray*}
+are required to change the state from $ \QBefore $ to $ \QAfter $.
+
+% The following commands will in the ``worksheet''
+% given in Fig. 4.2
+
+% Step 0: Operation
+\renewcommand{\operation}{B \becomes L B}
+
+% Step 1a: Precondition
+\renewcommand{\precondition}{B = \hat{B} \wedge \LowTr( L ) \wedge \ColDim( L )=\RowDim( B )}
+
+% Step 1b: Postcondition
+\renewcommand{\postcondition}{B = L \hat{B}}
+
+% Step 2: Loop-invariant
+\renewcommand{\invariant}{
+\FlaTwoByOne{ B_T}{B_B} =
+\FlaTwoByOne{ \hat{B}_T }
+            { L_{BR} \hat{B}_B }
+\wedge
+\ldots
+}
+
+% Step 3: Loop-guard
+\renewcommand{\guard}{ \neg \SameSize( L, L_{BR} ) }
+
+% Step 4: Initialization
+\renewcommand{\partitionings}{
+$ 
+B \rightarrow \FlaTwoByOne{ B_{T} }
+                          { B_{B} }
+$,
+$ 
+\hat{B} \rightarrow \FlaTwoByOne{ \hat{B}_{T} }
+                          { \hat{B}_{B} }
+$, and
+$ 
+L \rightarrow \FlaTwoByTwo{ L_{TL} }{ 0 }
+                          { L_{BL} }{ L_{BR} }
+$
+}
+\renewcommand{\partitionsizes}{
+$ B_{B} $ and $ \hat{ B }_B $ have $ 0 $ rows
+and $ L_{BR} $ is $ 0 \times 0 $
+}
+
+% Step 5a: repartitioning
+\renewcommand{\repartitionings}{
+$ 
+\FlaTwoByOne{ B_T }{ B_B } 
+\rightarrow
+\FlaThreeByOneT{ B_0 }{ b_1^T }{ B_2 },
+\FlaTwoByOne{ \hat{B}_T }{ \hat{B}_B } 
+\rightarrow
+\FlaThreeByOneT{ \hat{B}_0 }{ \hat{b}_1^T }{ \hat{B}_2 },
+$ \\
+and
+$ \FlaTwoByTwo{ L_{TL} }{ 0 }
+            { L_{BL} }{ L_{BR} }
+\rightarrow
+\FlaThreeByThreeTL{ L_{00} }{ 0 }{ 0 }
+                { l_{10}^T }{ \lambda_{11} }{ 0 }
+                { L_{20} }{ l_{21} }{ L_{22} }
+$
+}
+\renewcommand{\repartitionsizes}{
+$ b_1^T $ and $ \hat{b}_1^T $ are rows 
+and $ \lambda_{11} $ is a scalar
+}
+
+% Step 5b: moving the boundaries
+\renewcommand{\moveboundaries}{%
+$ 
+\FlaTwoByOne{ B_T }{ B_B } 
+\leftarrow
+\FlaThreeByOneB{ B_0 }{ b_1^T }{ B_2 },
+\FlaTwoByOne{ \hat{B}_T }{ \hat{B}_B } 
+\leftarrow
+\FlaThreeByOneB{ \hat{B}_0 }{ \hat{b}_1^T }{ \hat{B}_2 },
+$ \\
+and
+$ \FlaTwoByTwo{ L_{TL} }{ 0 }
+            { L_{BL} }{ L_{BR} }
+\leftarrow
+\FlaThreeByThreeBR{ L_{00} }{ 0 }{ 0 }
+                { l_{10}^T }{ \lambda_{11} }{ 0 }
+                { L_{20} }{ l_{21} }{ L_{22} }
+$
+}
+
+% Step 6: state before update
+\renewcommand{\beforeupdate}{
+\FlaTwoByOne{ 
+\FlaTwoByOneSingleLine{ B_0 }{ b_1^T }
+}
+{
+B_2
+} =
+\FlaTwoByOne{ 
+\FlaTwoByOneSingleLine{ \hat{B}_0 }{ \hat{b}_1^T }
+}
+{
+L_{22} \hat{B}_2
+}
+\wedge \ldots
+}
+
+% Step 7: state after update
+\renewcommand{\afterupdate}{
+\FlaTwoByOne{ 
+B_0
+}
+{
+\FlaTwoByOneSingleLine{ b_1^T }{ B_2 }
+} =
+\FlaTwoByOne{ 
+\hat{B}_0
+}
+{
+\FlaTwoByOneSingleLine{ \lambda_{11} \hat{b}_1^T }{ l_{21} \hat{b}_1^T + L_{22} \hat{B}_2 }
+}
+\wedge \ldots
+}
+
+% Step 8: update
+\renewcommand{\update}{
+\begin{minipage}[t]{4in}
+\noindent
+% \FlaStartCompute \\
+$ B_2 \becomes l_{21} b_1^T + B_2 $\\
+$ b_1^T \becomes \lambda_{11} b_1^T $\\
+% \FlaEndCompute \\
+\end{minipage}
+}
+
+% Given the commands defined above, the
+% command \worksheet generates the annotated
+% algorithm
+
+\begin{figure}[htbp]
+\worksheet
+\caption{Annotated algorithm for the lower triangular
+matrix multiplication example.}
+\label{fig:ws:ltrmm_lln}
+\end{figure}
+
+By recognizing that $ \hat{B} $ is never referenced we can eliminate
+all parts of the algorithm that refer to this matrix, yielding the
+final algorithm given in Fig.~\ref{fig:alg:ltrmm_lln}.
+
+% We now redefine some of the commands
+% used to generate Fig. 4.2, taking out all references
+% to \hat{B} to come up with the algorithm in Fig. 4.3.
+
+% Step 4
+\renewcommand{\partitionings}{
+$ 
+B \rightarrow \FlaTwoByOne{ B_{T} }
+                          { B_{B} }
+$
+and
+$ 
+L \rightarrow \FlaTwoByTwo{ L_{TL} }{ 0 }
+                          { L_{BL} }{ L_{BR} }
+$
+}
+\renewcommand{\partitionsizes}{
+$ B_{B} $ has $ 0 $ rows
+and $ L_{BR} $ is $ 0 \times 0 $
+}
+
+% Step 5a
+\renewcommand{\repartitionings}{
+$ 
+\FlaTwoByOne{ B_T }{ B_B } 
+\rightarrow
+\FlaThreeByOneT{ B_0 }{ b_1^T }{ B_2 }
+$
+and
+$ \FlaTwoByTwo{ L_{TL} }{ 0 }
+            { L_{BL} }{ L_{BR} }
+\rightarrow
+\FlaThreeByThreeTL{ L_{00} }{ 0 }{ 0 }
+                { l_{10}^T }{ \lambda_{11} }{ 0 }
+                { L_{20} }{ l_{21} }{ L_{22} }
+$
+}
+\renewcommand{\repartitionsizes}{
+$ b_1^T $ is a row 
+and $ \lambda_{11} $ is a scalar
+}
+
+% Step 5b
+\renewcommand{\moveboundaries}{%
+$ 
+\FlaTwoByOne{ B_T }{ B_B } 
+\leftarrow
+\FlaThreeByOneB{ B_0 }{ b_1^T }{ B_2 }
+$
+and
+$ \FlaTwoByTwo{ L_{TL} }{ 0 }
+            { L_{BL} }{ L_{BR} }
+\leftarrow
+\FlaThreeByThreeBR{ L_{00} }{ 0 }{ 0 }
+                { l_{10}^T }{ \lambda_{11} }{ 0 }
+                { L_{20} }{ l_{21} }{ L_{22} }
+$
+}
+
+% The command \FlaAlgorithm now generates the 
+% algorithm without annotations
+
+\begin{figure}[htbp]
+\FlaAlgorithm
+\caption{Unblocked algorithm for loop-invariant 1.}
+\label{fig:alg:ltrmm_lln}
+\end{figure}
+
+\subsubsection{Blocked Algorithms}
+
+In order to cast the algorithm to be rich in matrix-matrix
+multiplications, the repartitioning and redefinition of the
+submatrices in steps 5a and 5b in Fig.~\ref{fig:ws:ltrmm_lln_blk}
+expose multiple rows and/or columns at a time.  Block size $ b $ can
+be chosen to be any size that does not exceed the number of rows in $
+B_T $.  Again $ \QBefore $ is obtained by plugging the repartitioning
+in Step 6 into $ \PInv $ while $ \QAfter $ is obtained by plugging the
+redefinition of the quadrants in Step 7 into $ \PInv $.  The update in
+Step 8 is now obtained by comparing the state in Steps 6 and 7.  The
+bulk of the computation is now in the update $ B_2 \becomes L_{21} B_1
++ B_2 $ which, provided $ b > 1 $ involves a matrix-matrix
+multiplication.  The update $ B_1 \becomes L_{11} B_1 $ is itself a
+triangular matrix-matrix multiplication and can be achieved by any
+correct algorithm for implementing this operation.  In particular, an
+unblocked algorithm can be used, or a blocked algorithm can be called
+recursively.
+
+% Redefine the commands that generate the annotated 
+% algorithm for the blocked algorithm
+
+% Define the blocksize that appears in step 5a
+\renewcommand{\blocksize}{ b }
+%
+
+% Step 5a
+\renewcommand{\repartitionings}{
+$ 
+\FlaTwoByOne{ B_T }{ B_B } 
+\rightarrow
+\FlaThreeByOneT{ B_0 }{ B_1 }{ B_2 },
+\FlaTwoByOne{ \hat{B}_T }{ \hat{B}_B } 
+\rightarrow
+\FlaThreeByOneT{ \hat{B}_0 }{ \hat{B}_1 }{ \hat{B}_2 },
+$ \\
+and
+$ \FlaTwoByTwo{ L_{TL} }{ 0 }
+            { L_{BL} }{ L_{BR} }
+\rightarrow
+\FlaThreeByThreeTL{ L_{00} }{ 0 }{ 0 }
+                { L_{10} }{ L_{11} }{ 0 }
+                { L_{20} }{ L_{21} }{ L_{22} }
+$
+}
+%
+\renewcommand{\repartitionsizes}{
+$ B_1 $ and $ \hat{B}_1 $ have $ b $ rows
+and $ L_{11} $ is $ b \times b $
+}
+
+% Step 5b
+\renewcommand{\moveboundaries}{%
+$ 
+\FlaTwoByOne{ B_T }{ B_B } 
+\leftarrow
+\FlaThreeByOneB{ B_0 }{ B_1 }{ B_2 },
+\FlaTwoByOne{ \hat{B}_T }{ \hat{B}_B } 
+\leftarrow
+\FlaThreeByOneB{ \hat{B}_0 }{ \hat{B}_1 }{ \hat{B}_2 },
+$ \\
+and
+$ \FlaTwoByTwo{ L_{TL} }{ 0 }
+            { L_{BL} }{ L_{BR} }
+\leftarrow
+\FlaThreeByThreeBR{ L_{00} }{ 0 }{ 0 }
+                { L_{10} }{ L_{11} }{ 0 }
+                { L_{20} }{ L_{21} }{ L_{22} }
+$
+}
+
+% Step 6
+\renewcommand{\beforeupdate}{
+\FlaTwoByOne{ 
+\FlaTwoByOneSingleLine{ B_0 }{ B_1 }
+}
+{
+B_2
+} =
+\FlaTwoByOne{ 
+\FlaTwoByOneSingleLine{ \hat{B}_0 }{ \hat{B}_1 }
+}
+{
+L_{22} \hat{B}_2
+}
+\wedge \ldots
+}
+
+% Step 7
+\renewcommand{\afterupdate}{
+\FlaTwoByOne{ 
+B_0
+}
+{
+\FlaTwoByOneSingleLine{ B_1 }{ B_2 }
+} =
+\FlaTwoByOne{ 
+\hat{B}_0
+}
+{
+\FlaTwoByOneSingleLine{ L_{11} \hat{B}_1 }{ L_{21} \hat{B}_1 + L_{22} \hat{B}_2 }
+}
+\wedge \ldots
+}
+
+% Step 8
+\renewcommand{\update}{
+\begin{minipage}[t]{4in}
+\noindent
+% \FlaStartCompute \\
+$ B_2 \becomes L_{21} B_1 + B_2 $\\
+$ B_1 \becomes L_{11} B_1 $\\
+% \FlaEndCompute \\
+\end{minipage}
+}
+
+% Generate the annotated algorithm in Fig. 4.4
+\begin{figure}[htbp]
+\worksheet
+\caption{Annotated blocked algorithm for loop-invariant 1.}
+\label{fig:ws:ltrmm_lln_blk}
+\end{figure}
+%
+
+\subsubsection{Implementation}
+
+Sequential implementations for the unblocked and blocked algorithms
+for this loop-invariant using FLAME are given in
+Figs.~\ref{fig:syrk_un_lazy_unb}--\ref{fig:syrk_un_lazy_blk}.
+
+\begin{figure}[htbp]
+\footnotesize
+\begin{quote}
+\listinginput{1}{materials/syrk_un/lazy-rowlazy/Syrk_left_lower_notrans_unb.c}
+\end{quote}
+\caption{Unblocked algorithm for loop-invariants 1 and 2 using FLAME.}
+\label{fig:syrk_un_lazy_unb}
+\end{figure}
+
+\begin{figure}[htbp]
+\footnotesize
+\index{const}{\tt FLA\un RECURSIVE}%
+\begin{quote}
+\listinginput{1}{materials/syrk_un/lazy-rowlazy/Syrk_left_lower_notrans_blk.c}
+\end{quote}
+\caption{Blocked algorithm for loop-invariants 1 and 2 using FLAME.
+Recursion is optionally supported.}
+\label{fig:syrk_un_lazy_blk}
+\end{figure}
+
+\subsection{Loop-invariant 2}
+
+We now examine the loop-invariant
+\begin{equation}
+\label{eqn:ltrmm_lln:p3}
+\PInv: 
+\FlaTwoByOne{ B_T}{B_B} =
+\FlaTwoByOne{ \hat{B}_T }
+            { L_{BL} \hat{B}_T + L_{BR} \hat{B}_B }
+\wedge
+\ldots
+\end{equation}
+Comparing the loop-invariant in (\ref{eqn:ltrmm_lln:p3}) with the
+postcondition $ B = L \hat{B} $ we see again that {\em if} $L=L_{BR}$,
+$ B = B_B $, and $ \hat{B} = \hat{B}_B $ then the loop-invariant
+implies the postcondition, i.e., that the desired result has been
+computed.
+%
+The initialization in Step 4 in Fig.~\ref{fig:ws:ltrmm_lln:var2}
+is the same as that in Step 4 in Fig.~\ref{fig:ws:ltrmm_lln}.
+The fact that for this partitioning of $ B $, $ \hat{B} $, and $ L $,
+$
+\FlaTwoByOne{ \hat{B}_T}
+            { \hat{B}_B} =
+\FlaTwoByOne{ \hat{B}_T}
+            { L_{BL} \hat{B}_T + L_{BR} \hat{B}_B }
+$
+and the precondition implies the other parts of
+the loop-invariant, this initialization has
+the desired properties.
+%
+Similarly, the loop-guard is identical to
+the one for loop-invariant 1.
+
+\subsubsection{Unblocked algorithm}
+
+The repartitionings in Step 5a in Fig.~\ref{fig:ws:ltrmm_lln:var2}
+result in the state
+\begin{equation}
+\QBefore: 
+\FlaTwoByOne{ 
+\FlaTwoByOneSingleLine{ B_0 }{ b_1^T }
+}
+{
+B_2
+} =
+\FlaTwoByOne{ 
+\FlaTwoByOneSingleLine{ \hat{B}_0 }{ \hat{b}_1^T }
+}
+{
+\FlaOneByTwoSingleLine{ L_{20} }{ l_{21} }
+\FlaTwoByOneSingleLine{ \hat{B}_0 }{ \hat{b}_1^T } +
+L_{22} \hat{B}_2
+}
+\wedge \ldots
+\end{equation}
+or 
+\begin{equation}
+\label{eqn:ltrmm_lln:var2:before}
+\QBefore: 
+\FlaTwoByOne{ 
+\FlaTwoByOneSingleLine{ B_0 }{ b_1^T }
+}
+{
+B_2
+} =
+\FlaTwoByOne{ 
+\FlaTwoByOneSingleLine{ \hat{B}_0 }{ \hat{b}_1^T }
+}
+{
+L_{20} \hat{B}_0 + l_{21} \hat{b}_1^T +
+L_{22} \hat{B}_2
+}
+\wedge \ldots
+\end{equation}
+before the update.
+The redefinition in Step 5b in Fig.~\ref{fig:ws:ltrmm_lln:var2}
+means that the following state
+must result from the update:
+\[
+\QAfter: 
+\FlaTwoByOne{ 
+B_0
+}
+{
+\FlaTwoByOneSingleLine{ b_1^T }{ B_2 }
+} =
+\FlaTwoByOne{ 
+\hat{B}_0
+}
+{
+\FlaTwoByOneSingleLine{ l_{10}^T }
+                      { L_{20} }
+\hat{B}_0 + 
+\FlaTwoByTwoSingleLine{ \lambda_{11} }{ 0 }
+                      { l_{21} }{ L_{22} }
+\FlaTwoByOneSingleLine{ \hat{b}_1^T }{ \hat{B}_2 }
+}
+\wedge \ldots
+\]
+or
+\begin{equation}
+\label{eqn:ltrmm_lln:var2:after}
+\QAfter: 
+\FlaTwoByOne{ 
+B_0
+}
+{
+\FlaTwoByOneSingleLine{ b_1^T }{ B_2 }
+} =
+\FlaTwoByOne{ 
+\hat{B}_0
+}
+{
+\FlaTwoByOneSingleLine{ l_{10}^T \hat{B}_0 + \lambda_{11} \hat{b}_1^T }
+                      { L_{20} \hat{B}_0 + l_{21} \hat{b}_1^T + L_{22} \hat{B}_2 }
+}
+\wedge \ldots
+\end{equation}
+
+
+Comparing 
+(\ref{eqn:ltrmm_lln:var2:before}) and
+(\ref{eqn:ltrmm_lln:var2:after})
+we find that the update
+\begin{eqnarray*}
+& b_1^T & \becomes l_{10}^T B_{0} + \lambda_{11} b_1^T 
+\end{eqnarray*}
+is required to change the state from $ \QBefore $
+to $ \QAfter $.
+
+
+Again one recognizes that $ \hat{B} $ is never
+referenced and can be eliminated from the algorithm.
+
+% Define the commands to generate the annotated
+% algorithm in Fig. 4.7.
+
+% Step 2
+\renewcommand{\invariant}{
+\FlaTwoByOne{ B_T}{B_B} =
+\FlaTwoByOne{ \hat{B}_T }
+            { L_{BL} \hat{B}_T + L_{BR} \hat{B}_B }
+\wedge
+\ldots
+}
+
+% Step 3
+\renewcommand{\guard}{ \neg \SameSize( L, L_{BR} ) }
+
+% Step 4
+\renewcommand{\partitionings}{
+$ 
+B \rightarrow \FlaTwoByOne{ B_{T} }
+                          { B_{B} }
+$,
+$ 
+\hat{B} \rightarrow \FlaTwoByOne{ \hat{B}_{T} }
+                          { \hat{B}_{B} }
+$, and
+$ 
+L \rightarrow \FlaTwoByTwo{ L_{TL} }{ 0 }
+                          { L_{BL} }{ L_{BR} }
+$
+}
+\renewcommand{\partitionsizes}{
+$ B_{B} $ and $ \hat{ B }_B $ have $ 0 $ rows
+and $ L_{BR} $ is $ 0 \times 0 $
+}
+
+% Step 5a
+\renewcommand{\repartitionings}{
+$ 
+\FlaTwoByOne{ B_T }{ B_B } 
+\rightarrow
+\FlaThreeByOneT{ B_0 }{ b_1^T }{ B_2 },
+\FlaTwoByOne{ \hat{B}_T }{ \hat{B}_B } 
+\rightarrow
+\FlaThreeByOneT{ \hat{B}_0 }{ \hat{b}_1^T }{ \hat{B}_2 },
+$ \\
+and
+$ \FlaTwoByTwo{ L_{TL} }{ 0 }
+            { L_{BL} }{ L_{BR} }
+\rightarrow
+\FlaThreeByThreeTL{ L_{00} }{ 0 }{ 0 }
+                { l_{10}^T }{ \lambda_{11} }{ 0 }
+                { L_{20} }{ l_{21} }{ L_{22} }
+$
+}
+\renewcommand{\repartitionsizes}{
+$ b_1^T $ and $ \hat{b}_1^T $ are rows 
+and $ \lambda_{11} $ is a scalar
+}
+
+% Step 5b
+\renewcommand{\moveboundaries}{%
+$ 
+\FlaTwoByOne{ B_T }{ B_B } 
+\leftarrow
+\FlaThreeByOneB{ B_0 }{ b_1^T }{ B_2 },
+\FlaTwoByOne{ \hat{B}_T }{ \hat{B}_B } 
+\leftarrow
+\FlaThreeByOneB{ \hat{B}_0 }{ \hat{b}_1^T }{ \hat{B}_2 },
+$ \\
+and
+$ \FlaTwoByTwo{ L_{TL} }{ 0 }
+            { L_{BL} }{ L_{BR} }
+\leftarrow
+\FlaThreeByThreeBR{ L_{00} }{ 0 }{ 0 }
+                { l_{10}^T }{ \lambda_{11} }{ 0 }
+                { L_{20} }{ l_{21} }{ L_{22} }
+$
+}
+
+% Step 6
+\renewcommand{\beforeupdate}{
+\FlaTwoByOne{ 
+\FlaTwoByOneSingleLine{ B_0 }{ b_1^T }
+}
+{
+B_2
+} =
+\FlaTwoByOne{ 
+\FlaTwoByOneSingleLine{ \hat{B}_0 }{ \hat{b}_1^T }
+}
+{
+\FlaOneByTwoSingleLine{ L_{20} }{ l_{21} }
+\FlaTwoByOneSingleLine{ \hat{B}_0 }{ \hat{b}_1^T } +
+L_{22} \hat{B}_2 
+}
+\wedge \ldots
+}
+
+% Step 7
+\renewcommand{\afterupdate}{
+\FlaTwoByOne{ 
+B_0
+}
+{
+\FlaTwoByOneSingleLine{ b_1^T }{ B_2 }
+} =
+\FlaTwoByOne{ 
+\hat{B}_0
+}
+{
+\FlaTwoByOneSingleLine{ \lambda_{11} \hat{b}_1^T }{ l_{21} \hat{b}_1^T + L_{22} \hat{B}_2 }
+}
+\wedge \ldots
+}
+
+% Step 8
+\renewcommand{\update}{
+\begin{minipage}[t]{4in}
+\noindent
+% \FlaStartCompute \\
+$b_1^T \becomes l_{10}^T B_{0} + \lambda_{11} b_1^T $ \\
+% \FlaEndCompute \\
+\end{minipage}
+}
+
+% Generate figure 4.7
+\begin{figure}[htbp]
+\worksheet
+\caption{Annotated unblocked algorithm for loop-invariant 2.}
+\label{fig:ws:ltrmm_lln:var2}
+\end{figure}
+
+\subsubsection{Blocked Algorithms}
+
+Again, the algorithm can be cast to be rich in
+matrix-matrix multiplications by marching through
+the matrices multiple rows and/or columns at a time.
+The resulting algorithm is given in 
+Fig.~\ref{fig:ws:ltrmm_lln:var2:blk}.
+
+% Redefine commands to generate Fig. 4.8
+
+% Step 5a
+\renewcommand{\repartitionings}{
+$ 
+\FlaTwoByOne{ B_T }{ B_B } 
+\rightarrow
+\FlaThreeByOneT{ B_0 }{ B_1 }{ B_2 },
+\FlaTwoByOne{ \hat{B}_T }{ \hat{B}_B } 
+\rightarrow
+\FlaThreeByOneT{ \hat{B}_0 }{ \hat{B}_1 }{ \hat{B}_2 },
+$ \\
+and
+$ \FlaTwoByTwo{ L_{TL} }{ 0 }
+            { L_{BL} }{ L_{BR} }
+\rightarrow
+\FlaThreeByThreeTL{ L_{00} }{ 0 }{ 0 }
+                { L_{10} }{ L_{11} }{ 0 }
+                { L_{20} }{ L_{21} }{ L_{22} }
+$
+}
+%
+\renewcommand{\repartitionsizes}{
+$ B_1 $ and $ \hat{B}_1 $ have $ b $ rows
+and $ L_{11} $ is $ b \times b $
+}
+
+% Step 5b
+\renewcommand{\moveboundaries}{%
+$ 
+\FlaTwoByOne{ B_T }{ B_B } 
+\leftarrow
+\FlaThreeByOneB{ B_0 }{ B_1 }{ B_2 },
+\FlaTwoByOne{ \hat{B}_T }{ \hat{B}_B } 
+\leftarrow
+\FlaThreeByOneB{ \hat{B}_0 }{ \hat{B}_1 }{ \hat{B}_2 },
+$ \\
+and
+$ \FlaTwoByTwo{ L_{TL} }{ 0 }
+            { L_{BL} }{ L_{BR} }
+\leftarrow
+\FlaThreeByThreeBR{ L_{00} }{ 0 }{ 0 }
+                { L_{10} }{ L_{11} }{ 0 }
+                { L_{20} }{ L_{21} }{ L_{22} }
+$
+}
+
+% Step 6
+\renewcommand{\beforeupdate}{
+\FlaTwoByOne{ 
+\FlaTwoByOneSingleLine{ B_0 }{ B_1 }
+}
+{
+B_2
+} =
+\FlaTwoByOne{ 
+\FlaTwoByOneSingleLine{ \hat{B}_0 }{ \hat{B}_1 }
+}
+{
+\FlaOneByTwoSingleLine{L_{20}}{L_{21}}
+\FlaTwoByOneSingleLine{\hat{B}_0}{ \hat{B}_1 } +
+L_{22} \hat{B}_2
+}
+\wedge \ldots
+}
+
+% Step 7
+\renewcommand{\afterupdate}{
+\FlaTwoByOne{ 
+B_0
+}
+{
+\FlaTwoByOneSingleLine{ B_1 }{ B_2 }
+} =
+\FlaTwoByOne{ 
+\hat{B}_0
+}
+{
+\FlaTwoByOneSingleLine{ L_{10} }{ L_{20} }
+\hat{B}_0 +
+\FlaTwoByTwoSingleLine{ L_{11} }{ L_{12} }
+                      { L_{21} }{ L_{22} }
+\FlaTwoByOneSingleLine{ \hat{B}_1 }{ \hat{B}_2 }
+}
+\wedge \ldots
+}
+
+% Step 8
+\renewcommand{\update}{
+\begin{minipage}[t]{4in}
+\noindent
+% \FlaStartCompute \\
+$ B_1 \becomes L_{10} B_0 + L_{11} B_1 $\\
+% \FlaEndCompute \\
+\end{minipage}
+}
+
+% Generate Fig. 4.8
+\begin{figure}[htbp]
+\worksheet
+\caption{Annotated blocked algorithm for loop-invariant 2.}
+\label{fig:ws:ltrmm_lln:var2:blk}
+\end{figure}
+%
+
+\subsubsection{Implementation}
+
+Sequential implementations for the unblocked and blocked algorithms
+for this loop-invariant using FLAME are given in
+Figs.~\ref{fig:syrk_un_lazy_unb}--\ref{fig:syrk_un_lazy_blk}.
+
+\section{Algorithms that start by partitioning $ B $}
+
+In Section~\ref{sec:syrk_un:L} we saw that when we start by
+partitioning matrix $ L $, two feasible loop-invariants result.
+However, the recipe for deriving algorithms indicates that one should
+start by picking {\em a} variable without indicating {\em which}
+variable.  An alternative set of loop-invariants results when one
+starts by partitioning matrix $ B $.  The partitioning of $ B $
+introduces an identical partitioning of $ \hat{B} $ since they
+reference the same data.
+
+\subsection{Horizontal partitioning of $ B$}
+
+Revisiting Step 2, we first partition
+\[
+B \rightarrow \FlaTwoByOne{ B_{T}}{ B_{B} }
+\quad
+\mbox{and}
+\quad
+\hat{B} \rightarrow \FlaTwoByOne{ \hat{B}_{T}}{ \hat{B}_{B} }.
+\]
+Plugging these partitionings into the postcondition yields
+\[
+\FlaTwoByOne{ B_{T}}{ B_{B} }
+\quad
+=
+\quad
+% \FlaTwoByTwo{ L_{TL} }{ 0 }
+%            { L_{BL} }{ L_{BR} }
+( \mbox{ some partitioning of $ L $ } )
+\FlaTwoByOne{ \hat{B}_{T}}{ \hat{B}_{B} }.
+\]
+In order to be able to multiply out the expression on the right we
+will have to partition $ L $ into quadrants.  The astute reader will
+recognize that now the partitionings of $ B $, $ \hat{B} $, and $ L $
+are identical to those introduced in the example in
+Section~\ref{sec:trmm_lln:L} and will thus lead to the same
+loop-invariants and algorithms.
+
+\subsection{Vertical partitioning of $ B$}
+
+Now, let us partition instead like
+\[
+B \rightarrow \FlaOneByTwo{ B_{L}}{ B_{R} }
+\quad
+\mbox{and}
+\quad
+\hat{B} \rightarrow \FlaOneByTwo{ \hat{B}_{L}}{ \hat{B}_{R} }.
+\]
+Plugging these partitionings into the postcondition yields
+\[
+\FlaOneByTwo{ B_{L}}{ B_{R} }
+\quad
+=
+\quad
+( \mbox{ some partitioning of $ L $ } )
+\FlaOneByTwo{ \hat{B}_{L}}{ \hat{B}_{R} }.
+\]
+In order to be able to multiply out the expression on the right we
+recognize that $ L $ should {\em not} be partitioned.
+
+The condition from which we will determine possible loop-invariants
+now becomes
+\[
+\FlaOneByTwo{ B_{L}}{ B_{R} }
+=
+L
+\FlaOneByTwo{ \hat{B}_{L}}{ \hat{B}_{R} }
+=
+\FlaOneByTwo{ L \hat{B}_{L}}{ L \hat{B}_{R} }
+\]
+The two feasible loop-invariants that can be identified from this
+equality are
+\begin{center}
+\begin{tabular}{p{1.5in}  l}
+Loop-invariant 3: & 
+$
+\FlaOneByTwo{ B_{L}}{ B_{R} }
+=
+\FlaOneByTwo{ L \hat{B}_{L}}{ \hat{B}_{R} }
+$ \\ 
+Loop-invariant 4: & 
+$
+\FlaOneByTwo{ B_{L}}{ B_{R} }
+=
+\FlaOneByTwo{ \hat{B}_{L}}{ L \hat{B}_{R} }.
+$
+\end{tabular}
+\end{center}
+An annotated blocked algorithm corresponding to Loop-invariant 3 is
+given in Fig.~\ref{fig:ws:ltrmm_lln3_blk}.
+
+\renewcommand{\precondition}{B = \hat{B} \wedge \LowTr( L ) \wedge \ColDim( L )=\RowDim( B )}
+
+\renewcommand{\postcondition}{B = L \hat{B}}
+
+\renewcommand{\invariant}{
+\FlaOneByTwo{ B_L}{B_R} =
+\FlaOneByTwo{ L \hat{B}_L }{ \hat{B}_R }
+\wedge
+\ldots
+}
+
+\renewcommand{\guard}{ \neg \SameSize( B, B_L ) }
+
+\renewcommand{\partitionings}{
+$ 
+B \rightarrow \FlaOneByTwo{ B_{L} }{ B_{R} }
+$ and
+$ 
+\hat{B} \rightarrow \FlaOneByTwo{ \hat{B}_{L} }
+                          { \hat{B}_{R} }
+$
+}
+\renewcommand{\partitionsizes}{
+$ B_{L} $ and $ \hat{ B }_L $ have $ 0 $ columns
+}
+
+\renewcommand{\blocksize}{b}
+
+\renewcommand{\repartitionings}{
+$ 
+\FlaOneByTwo{ B_L }{ B_R } 
+\rightarrow
+\FlaOneByThreeR{ B_0 }{ B_1 }{ B_2 }
+$
+and
+$ 
+\FlaOneByTwo{ \hat{B}_L }{ \hat{B}_R } 
+\rightarrow
+\FlaOneByThreeR{ \hat{B}_0 }{ \hat{B}_1 }{ \hat{B}_2 }
+$
+}
+\renewcommand{\repartitionsizes}{
+$ B_1 $ and $ \hat{B}_1 $ have $ b $ columns
+}
+
+\renewcommand{\moveboundaries}{%
+$ 
+\FlaOneByTwo{ B_L }{ B_R } 
+\leftarrow
+\FlaOneByThreeL{ B_0 }{ B_1 }{ B_2 }
+$
+and
+$ 
+\FlaOneByTwo{ \hat{B}_L }{ \hat{B}_R } 
+\leftarrow
+\FlaOneByThreeL{ \hat{B}_0 }{ \hat{B}_1 }{ \hat{B}_2 }
+$
+}
+
+\renewcommand{\beforeupdate}{
+\FlaOneByTwo{ B_0 }{ \FlaOneByTwoSingleLine{ B_1 }{ B_2 } }
+=
+\FlaOneByTwo{ L \hat{B}_0 }{ \FlaOneByTwoSingleLine{ \hat{B}_1 }{ \hat{B}_2 } }
+\wedge \ldots
+}
+
+\renewcommand{\afterupdate}{
+\FlaOneByTwo{ \FlaOneByTwoSingleLine{ B_0 }{ B_1 } }
+{ B_2 }
+=
+\FlaOneByTwo{ L \FlaOneByTwoSingleLine{ \hat{B}_0 }{ \hat{B}_1 } }{ \hat{B}_2 }
+\wedge \ldots
+}
+
+\renewcommand{\update}{
+\begin{minipage}[t]{4in}
+\noindent
+% \FlaStartCompute \\
+$ B_1 \becomes L B_1 $\\
+% \FlaEndCompute \\
+\end{minipage}
+}
+
+\begin{figure}[htbp]
+\worksheet
+\caption{Annotated blocked algorithm for the lower triangular
+matrix multiplication example.}
+\label{fig:ws:ltrmm_lln3_blk}
+\end{figure}
+
+\subsection{Implementation}
+
+An implementation for the blocked algorithm corresponding to
+Loop-invariant 3 is given Figs.~\ref{fig:syrk_un_right}.
+
+\begin{figure}[htbp]
+\begin{quote}
+\index{const}{\tt FLA\un RECURSIVE}%
+\listinginput{1}{materials/syrk_un/rightmoving/Syrk_un_right_wrt_B_blk.c}
+\end{quote}
+\caption{Blocked algorithm for loop-invariants 3 using FLAME.}
+\label{fig:syrk_un_right}
+\end{figure}
+
+\begin{quote}
+\bf Note to the students: I have eliminated as much
+as possible references to ``lazy'' and ``row-lazy'' algorithms.  The
+rest will be removed from the remainder of the chapter in the near
+future.  You need to number the feasible loop-invariants, and refere
+to these numbers instead.
+\end{quote}
+
+\section{Performance}
+
+In this section, we discuss the performance attained by the different
+variants for computing $ B \leftarrow L B $.  In each of the Figs.
+~\ref{fig:syrk_un:lazy-row-lazy:ATLAS} and
+~\ref{fig:syrk_un:lazy-row-lazy:ITXGEMM}, we compare the performance
+attained by five different implementations:
+\begin{itemize}
+\item{Reference}
+{\tt DTRMM} as implemented as part of ATLAS,
+\item{FLAME}
+{\tt FLA\_Trmm} implemented as part of FLAME
+as of this writing,
+\item{Unblocked}
+the unblocked implementation in Fig.~\ref{fig:syrk_un_lazy_unb},
+\item{Blocked}
+the blocked implementation in Fig.~\ref{fig:syrk_un_lazy}
+called with 
+{\tt rec == 
+\index{const}{\tt FLA\un NON\un RECURSIVE}%
+FLA\_NON\_RECURSIVE}, and
+\item{Recursive}
+the blocked implementation in Fig.~\ref{fig:syrk_un_lazy}
+called with 
+{\tt rec == 
+\index{const}{\tt FLA\un RECURSIVE}%
+FLA\_RECURSIVE}.
+\end{itemize}
+In Fig.~\ref{fig:syrk_un:lazy-row-lazy:ATLAS}, all FLAME
+implementations are based on the matrix-matrix multiplication ({\tt
+DGEMM}) provided by ATLAS.  Notice that for the platform on which we
+performed the experiments, multiples of 40 are good block sizes when
+using the ATLAS matrix-matrix multiplication kernel.  We note that the
+unblocked algorithms perform badly, since they are rich in
+matrix-vector operations that do not benefit much from cache memories.
+The blocked algorithms performed better for relatively small block
+sizes ({\tt nb\_alg=80}) than for larger block sizes ({\tt
+nb\_alg=160}).  The reason for this is that too much of the
+computation is performed in the subprogram for which the unblocked
+algorithm is used.  The recursive implementations benefit from larger
+block sizes, since they overcome this problem that plagues the blocked
+algorithm.  In addition they benefit from the fact that the {\tt
+DGEMM} kernel performs better for larger blocks.
+
+In Fig.~\ref{fig:syrk_un:lazy-row-lazy:ITXGEMM}, all FLAME
+implementations are based on the matrix-matrix multiplication ({\tt
+DGEMM}) provided by ITXGEMM.  This time, as discussed in
+Section~\ref{sec:mmmult:impact}, 128 is a magic block size.  Again, as
+expected, the unblocked implementations perform badly.  Again, the
+blocked algorithm benefits from smaller block sizes and the recursive
+algorithm performs best.  It is interesting to note that the lazy
+algorithm performs much better for small problem sizes when the
+outer-most block size is chosen to be 128.  This is probably mostly
+due to the fact that the unblocked lazy algorithm performs better.
+
+It is interesting to note that asymptotically, the recursive row-lazy
+implementation performs somewhat worse than the recursive lazy
+implementation, when ATLAS is used for the matrix-matrix multiply
+(Fig.~\ref{fig:syrk_un:lazy-row-lazy:ATLAS}).  We attribute this to
+the fact that when $ m $ is relatively small and $ n $ and $ k $ are
+large (e.g., in a panel-matrix multiply), the ATLAS matrix-matrix
+multiplication does not perform as well as when $ k $ is relatively
+small and $ m $ and $ n $ are large (e.g., in a panel-panel multiply).
+Since the row-lazy and lazy algorithms are rich in panel-matrix and
+panel-panel multiplies, respectively, the lazy algorithm attains
+better performance.  This is not observed as dramatically in in the
+experiments where ITXGEMM was used for matrix-matrix multiplication
+(Fig.~\ref{fig:syrk_un:lazy-row-lazy:ITXGEMM}).  This is due to the
+fact that ITXGEMM attains performance that is similar regardless of
+the shape of the matrix.
+
+Notice that the right-moving algorithms perform miserably
+(Fig.~\ref{fig:syrk_un:right-moving}).  We point out that the blocked
+and recursive algorithms attain essentially the same performance as
+the unblocked algorithm.  This is not surprising since all computation
+is in a triangular matrix-vector multiply, which does not perform very
+well, regardless of how the blocking proceeds.
+
+Since in the recursive algorithms at each level a different variant
+could be called to solve the subproblem, it may be possible to improve
+performance further by combining different variants.  We have not yet
+studied this.
+
+\begin{figure}[htbp]
+\begin{center}
+\begin{tabular}{c | c}
+Row-lazy & Lazy \\ \hline
+& \\
+\psfig{figure=syrk_un/graphs/syrk_un_rowlazy_wrt_L_80.eps,width=3.0in,height=3.0in} &
+\psfig{figure=syrk_un/graphs/syrk_un_lazy_wrt_L_80.eps,width=3.0in,height=3.0in}
+\\ \hline
+& \\
+\psfig{figure=syrk_un/graphs/syrk_un_rowlazy_wrt_L_160.eps,width=3.0in,height=3.0in} &
+\psfig{figure=syrk_un/graphs/syrk_un_lazy_wrt_L_160.eps,width=3.0in,height=3.0in}
+\end{tabular}
+\end{center}
+\caption{Performance of the row lazy (left) and lazy (right) (w.r.t. $ L $) 
+lower triangular matrix-matrix multiplication 
+algorithms for a block size of $ 80 $ (top) and
+$ 160 $ (bottom).
+For these experiments, the ATLAS matrix-matrix multiplication
+kernel was used.}
+\label{fig:syrk_un:lazy-row-lazy:ATLAS}
+\end{figure}
+
+\begin{figure}[htbp]
+\begin{center}
+\begin{tabular}{c | c}
+Row-lazy & Lazy \\ \hline
+& \\
+\psfig{figure=syrk_un/graphs/syrk_un_rowlazy_wrt_L_32.eps,width=3.0in,height=3.0in} &
+\psfig{figure=syrk_un/graphs/syrk_un_lazy_wrt_L_32.eps,width=3.0in,height=3.0in}
+\\ \hline
+& \\
+\psfig{figure=syrk_un/graphs/syrk_un_rowlazy_wrt_L_128.eps,width=3.0in,height=3.0in} &
+\psfig{figure=syrk_un/graphs/syrk_un_lazy_wrt_L_128.eps,width=3.0in,height=3.0in}
+\end{tabular}
+\end{center}
+\caption{Performance of the row lazy (left) and lazy (right) (w.r.t. $ L $) 
+lower triangular matrix-matrix multiplication 
+algorithms for a block size of $ 32 $ (top) and
+$ 128 $ (bottom).
+For these experiments, the ITXGEMM matrix-matrix multiplication
+kernel was used.}
+\label{fig:syrk_un:lazy-row-lazy:ITXGEMM}
+\end{figure}
+
+\begin{figure}[htbp]
+\begin{center}
+\begin{tabular}{c | c}
+\psfig{figure=syrk_un/graphs/syrk_un_right_wrt_B_32.eps,width=3.0in,height=3.0in} &
+\psfig{figure=syrk_un/graphs/syrk_un_right_wrt_B_128.eps,width=3.0in,height=3.0in}
+\end{tabular}
+\end{center}
+\caption{Performance of the right-moving (w.r.t. $ B $) triangular matrix-matrix multiplication 
+algorithms for a block size of $ 32 $ (left) and
+$ 128 $ (right), using ITXGEMM.}
+\label{fig:syrk_un:right-moving}
+\end{figure}
+\index{op}{matrix-matrix multiplication!$ A $ lower triangular!$ B \leftarrow A B $|)}%

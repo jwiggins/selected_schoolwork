@@ -1,0 +1,1126 @@
+% The following commands help in generating the index
+\index{index}{triangular solve!multiple RHSs}%
+\index{op}{triangular solve!multiple RHSs!$ B \leftarrow B U^{-T} $|(}%
+
+% Name of the chapter
+
+\chapter{Triangular Solve (with Multiple RHSs)\\
+$ B \leftarrow B U^{-T} $ }
+\label{chapter:trsm_rut}
+
+% Authors
+
+\ChapterAuthor{
+\index{author}{Van Zee, Field G.}
+Field G. Van Zee
+\\[0.1in]
+\index{author}{Walkup, Patrick J.}
+Patrick J. Walkup
+}
+
+% Add the names of the authors to the table of contents
+
+\addtocontents{toc}{ {by {\bf Field G. Van Zee and Patrick J. Walkup}} 
+13 May 2002: DONE.}
+
+
+In this chapter, we discuss the implementation of the triangular matrix
+solve with multiple right-hand-sides
+\[
+B \leftarrow B U^{-T}
+\]
+where $ U $ is an $ m \times m $ upper triangular matrix and $ B $ is
+$ n \times m $.  We will overwrite $ B $ with the result without
+requiring a workarray.  We start by deriving a number of different
+sequential algorithms.  Subsequently, we show how to code the
+algorithms using FLAME.  Later in the chapter the parallel
+implementation of the operation is discussed.
+
+The variables for the triangular matrix solve can be
+described by the precondition
+\[
+\PPre:
+B = \hat{B} \wedge \SameSize( B, \hat{B} ) \wedge \UppTr( U ) \wedge
+\ColDim( B )=\RowDim( U ),
+\]
+where $ \hat{B} $ indicates the original contents of $ B $.  Here the
+predicate $ \UppTr( A ) $ is true iff $ A $ is an upper triangular
+matrix.  The functions $ \RowDim( A ) $ and $ \ColDim( A ) $ return
+the row and column dimension of $ A $, respectively.  The operation to
+be performed $ B \becomes B U^{-T} $ translates to the postcondition $
+\PPost: B = \hat{B} U^{-T}$.
+
+\section{Algorithms That Start By Partitioning $ U $}
+\label{sec:trsm_rut:U}
+
+Let us start by partitioning matrix $ U $.  Since it is triangular, we
+partition it like
+\[
+U \rightarrow \FlaTwoByTwo{ U_{TL} }{ U_{TR} }
+                          {   0    }{ U_{BR} },
+\]
+where $ U_{TR} $ is square so that both submatrices on the diagonal
+are themselves upper triangular.
+
+Substituting the partitioning of $ U $ into the postcondition yields
+\[
+( \mbox{some partitioning of }{B} )
+= 
+( \mbox{some partitioning of }\hat{B} )
+{ \FlaTwoByTwo{ U_{TL} }{ U_{TR} }
+            {   0    }{ U_{BR} } }^{-T}
+\]
+This suggests that $ B $ and $ \hat{B} $ should be partitioned
+vertically into two submatrices, or into quadrants.  Let us consider
+the case where $ B $ and $ \hat{B} $ are partitioned vertically into
+two submatrices.  Then
+\[
+\FlaOneByTwo{ B_L }
+            { B_R }
+= 
+\FlaOneByTwo{ \hat{B}_L }
+            { \hat{B}_R }
+{ \FlaTwoByTwo{ U_{TL} }{ U_{TR} }
+              {   0    }{ U_{BR} } }^{-T}     
+\]
+According to the rules of matrix algebra, the former equation can be expressed as
+\[
+\FlaOneByTwo{ B_L }
+            { B_R }
+{ \FlaTwoByTwo{ U_{TL} }{ U_{TR} }
+              {   0    }{ U_{BR} } }^{T}    
+= 
+\FlaOneByTwo{ \hat{B}_L }
+            { \hat{B}_R }      
+\]
+and after applying the transpose operation on $ U $, we have
+\[
+\FlaOneByTwo{ B_L }
+            { B_R }
+\FlaTwoByTwo{ U_{TL}^{T} }{   0    }
+            { U_{TR}^{T} }{ U_{BR}^{T} }   
+= 
+\FlaOneByTwo{ \hat{B}_L }
+            { \hat{B}_R }      
+\]
+In order to be able to multiply out the matrices on the left and to
+be able to then set the submatrices on the right equal to the result on
+the left we find that the following must hold:
+\[
+\RowDim( U_{TL}^T ) = \ColDim( {B}_L ) 
+\wedge
+\ColDim( U_{TL}^T ) = \ColDim( \hat{B}_L ) 
+\]
+which in turn implies that $ \ColDim( B_L )= \ColDim( \hat{B}_L ) $
+since $ U_{TL}^T $ is a square matrix.  This is good news since this
+means $ B $ and $ \hat{B} $ are partitioned the same way, which is
+important since $ B $ and $ \hat{B}$ will reference the same matrix ($
+\hat{B} $ is being overwritten by $ B $).  Multiplying out the 
+partitioned matrices gives us
+\[
+\FlaOneByTwo{ B_{L} U_{TL}^{T} + B_{R} U_{TR}^{T} }
+            { B_{R} U_{BR}^{T}  }
+=
+\FlaOneByTwo{ \hat{B}_{L} }
+            { \hat{B}_{R} }
+\]
+which yields the equalities
+\begin{equation}
+\label{eqn:utrsm_rut}
+\begin{array}{r c l}
+B_{L} U_{TL}^{T} + B_{R} U_{TR}^{T} &=& \hat{B}_{L} \\
+B_{R} U_{BR}^{T}                    &=& \hat{B}_{R}
+\end{array}
+\end{equation}
+
+% Insert the table of possible loop-invariants from
+% file trsm_rut/table.new.tex
+
+\input{trsm_rut/table.new}
+From (\ref{eqn:utrsm_rut}) we conclude that the operations to be
+performed are $ B_{L} U_{TL}^{T} $, $ B_{R} U_{TR}^{T} $, and $ B_{R} 
+U_{BR}^{T} $.  At an intermediate stage, each of these either has or
+has not already been computed, leading to $ 2^3 = 8 $ possible
+loop-invariants. However, only the six invariants which make sense 
+computationally are tabulated in Fig.~\ref{fig:TRSM_RUT_variants}.
+
+\subsection{Loop-invariant 1}
+
+We will first examine the (feasible) loop-invariant
+\begin{eqnarray}
+\label{eqn:utrsm_rut:p1}
+\PInv: 
+\lefteqn{
+\FlaOneByTwo{ B_L }{ B_R } =
+\FlaOneByTwo{ \hat{B}_{L} }
+            { \hat{B}_R U_{BR}^{-T} }
+\wedge
+\UppTr( U_{BR} ) } \\ %\wedge \\
+\nonumber
+& & 
+\RowDim( U_{TL}^T ) = \ColDim( {B}_L ) 
+\wedge
+\ColDim( U_{TL}^T ) = \ColDim( \hat{B}_L ) 
+\end{eqnarray}
+For short we will write
+\begin{equation}
+\label{eqn:utrsm_rut:p2}
+\PInv: \FlaOneByTwo{ B_L}{B_R} =
+\FlaOneByTwo{ \hat{B}_{L} }
+            { \hat{B}_R U_{BR}^{-T} }
+\wedge
+\ldots
+\end{equation}
+for (\ref{eqn:utrsm_rut:p1}).
+
+Comparing the loop-invariant in (\ref{eqn:utrsm_rut:p2}) with the
+postcondition $ B = \hat{B} U^{-T} $ we see that {\em if} $ U = U_{BR} $, 
+$ B = B_R $, and $ \hat{B} = \hat{B}_R $ then the loop-invariant implies 
+the postcondition, i.e., that the desired result has been computed.
+Notice that $ \SameSize( U, U_{BR} ) \wedge \PInv $ implies $ U =
+U_{BR} $, $ B = B_R $, and $ \hat{B} = \hat{B}_R $ since the partitioned
+matrices are references into the original matrices $ U $, $ B $, and $ \hat{B} $.  
+Thus, the loop-guard $ G: \neg \SameSize( U, U_{BR} ) $ has the 
+desired property.
+
+Consider the initialization in Step 4 in Fig.~\ref{fig:ws:utrsm_rut}.
+The fact that for this partitioning of $ B $, $ U $, and $ \hat{B} $,
+$
+\FlaOneByTwo{ B_L}{B_R} =
+\FlaOneByTwo{ B_{L} }
+            { B_R U_{BR}^{-T} }
+$
+and the precondition implies the
+other parts of the loop-invariant, this initialization has the desired
+properties.
+
+Loop-guard $ G $ indicates that eventually $ U_{BR} $ should equal all
+of $ U $, at which point $ G $ becomes {\em false} and the loop is
+exited.  After the initialization, $ U_{BR} $ is $ 0 \times 0 $.
+Thus, the repartitioning should be such that as the computation
+proceeds rows and columns are subtracted from $ U_{TL} $ and added to
+$ U_{BR} $ while updating $ U_{TR} $ consistently with this.
+
+\subsubsection{Unblocked algorithm}
+
+If we move the partitionings by individual rows and columns, we obtain
+the repartitioning and redefinition of the partitioning in Steps 5a
+and 5b in Fig.~\ref{fig:ws:utrsm_rut}.  The repartitionings in Step 5a
+in Fig.~\ref{fig:ws:utrsm_rut} result in the state
+\begin{equation}
+\label{eqn:utrsm_rut:bu}
+\QBefore: 
+\FlaOneByTwo{ \FlaOneByTwoSingleLine{ B_{0} }
+                                    { b_{1} } }
+	                            { B_{2} } 
+=
+\FlaOneByTwo{ \FlaOneByTwoSingleLine{ \hat{B}_{0} } { \hat{b}_{1} } } 
+            { \hat{B}_{2} U_{22}^{-T}  }
+\wedge \ldots
+\end{equation}
+before the update.  The redefinition in Step 5b in
+Fig.~\ref{fig:ws:utrsm_rut} means that the following state must result
+from the update:
+\[
+\QAfter: 
+\FlaOneByTwo{ B_{0} }{ \FlaOneByTwoSingleLine{ b_{1} } { B_{2} }  }
+=
+\FlaOneByTwo{ \hat{B}_{0} }
+            {  \FlaOneByTwoSingleLine { \hat{b}_{1} } { \hat{B}_{2} }
+	       \FlaTwoByTwoSingleLine { \upsilon_{11} } { u_{12}^{T} }
+                                      {    0          } { U_{22}     }^{-T}
+            }
+\wedge \ldots
+\]
+Applying matrix transposition and inversion to $ U $ leaves us
+\[
+\QAfter: 
+\FlaOneByTwo{ B_{0} }{ \FlaOneByTwoSingleLine{ b_{1} } { B_{2} }  }
+=
+\FlaOneByTwo{ \hat{B}_{0} }
+            {  \FlaOneByTwoSingleLine { \hat{b}_{1} } { \hat{B}_{2} }
+	       \FlaTwoByTwoSingleLine { \upsilon_{11}^{-1}                     } {     0      }
+                                      { -U_{22}^{-T} u_{12} \upsilon_{11}^{-1} } { U_{22}^{-T}}
+            }
+\wedge \ldots
+\]
+Multiplying out the resulting submatrices yields
+\begin{equation}
+\label{eqn:utrsm_rut:au}
+\QAfter: 
+\FlaOneByTwo{ B_{0} }{ \FlaOneByTwoSingleLine{ b_{1} } { B_{2} }  }
+=
+\FlaOneByTwo{ \hat{B}_{0} }
+            { \FlaOneByTwoSingleLine { ( \hat{b}_{1} - B_{2} u_{12} ) \upsilon_{11}^{-1} } 
+                                     { \hat{B}_{2} U_{22}^{-T} }
+            }
+\wedge \ldots
+\end{equation}
+
+
+
+Comparing Eqns.~\ref{eqn:utrsm_lln:bu} and~\ref{eqn:utrsm_rut:au} we
+find that the updates
+\begin{eqnarray*}
+& b_1 \becomes( \hat{b}_{1} - B_{2} u_{12} ) \upsilon_{11}^{-1}
+\end{eqnarray*}
+are required to change the state from $ \QBefore $ to $ \QAfter $.
+
+% The following commands will in the ``worksheet''
+% given in Fig. 4.2
+
+% Step 0: Operation
+\renewcommand{\operation}{B \becomes B U^{-T}}
+
+% Step 1a: Precondition
+\renewcommand{\precondition}{B = \hat{B} \wedge \UppTr( U ) \wedge \ColDim( B )=\RowDim( U )}
+
+% Step 1b: Postcondition
+\renewcommand{\postcondition}{B = \hat{B} U^{-T}}
+
+% Step 2: Loop-invariant
+\renewcommand{\invariant}{
+\FlaOneByTwo{ B_L }{ B_R } =
+\FlaOneByTwo{ \hat{B}_L }
+            { \hat{B}_R U_{BR}^{-T} }
+\wedge
+\ldots
+}
+
+% Step 3: Loop-guard
+\renewcommand{\guard}{ \neg \SameSize( U, U_{BR} ) }
+
+% Step 4: Initialization
+\renewcommand{\partitionings}{
+$ 
+B \rightarrow \FlaOneByTwo{ B_L }
+                          { B_R }
+$,
+$ 
+\hat{B} \rightarrow \FlaOneByTwo{ \hat{B}_L }
+                                { \hat{B}_R }
+$, and
+$ 
+U \rightarrow \FlaOneByTwo{ U_{TL} }{ U_{TR} }
+                          {   0    }{ U_{BR} }
+$
+}
+\renewcommand{\partitionsizes}{
+$ B_R $ and $ \hat{B}_R $ have $ 0 $ rows
+and $ U_{BR} $ is $ 0 \times 0 $
+}
+
+% Step 5a: repartitioning
+\renewcommand{\repartitionings}{
+$ 
+\FlaOneByTwo{ B_L }
+            { B_R } 
+\rightarrow
+\FlaOneByThreeL{ B_0 }
+               { b_1 }
+               { B_2 },
+\FlaOneByTwo{ \hat{B}_L }
+            { \hat{B}_R } 
+\rightarrow
+\FlaOneByThreeL{ \hat{B}_0 }
+               { \hat{b}_1 }
+               { \hat{B}_2 }
+$ \\
+and
+$ 
+\FlaTwoByTwo{ U_{TL} }{ U_{TR} }
+            {   0    }{ U_{BR} } 
+\rightarrow
+\FlaThreeByThreeTL{ U_{00} } { u_{01}        } { U_{02}     }
+                  {   0    } { \upsilon_{11} } { u_{12}^{T} }
+                  {   0    } {    0          } { U_{22}     }
+$
+}
+\renewcommand{\repartitionsizes}{
+$ b_1 $ and $ \hat{b}_1 $ are columns 
+and $ \upsilon_{11} $ is a scalar
+ }
+
+% Step 5b: moving the boundaries
+\renewcommand{\moveboundaries}{
+$
+\FlaOneByTwo{ B_L }
+            { B_R } 
+\leftarrow
+\FlaOneByThreeR{ B_0 } { b_1 } { B_2 },
+\FlaOneByTwo{ \hat{B}_L }
+            { \hat{B}_R } 
+\leftarrow
+\FlaOneByThreeR{ \hat{B}_0 } { \hat{b}_1 } { \hat{B}_2 }
+$ \\
+and
+$ 
+\FlaTwoByTwo{ U_{TL} }{ U_{TR} }
+            {    0   }{ U_{BR} } \leftarrow
+\FlaThreeByThreeBR{ U_{00} } { u_{01}        } { U_{02}     }
+                  {   0    } { \upsilon_{11} } { u_{12}^{T} }
+                  {   0    } {      0        } { U_{22}     }  
+$
+}
+
+% Step 6: state before update
+\renewcommand{\beforeupdate}{
+\FlaOneByTwo{ \FlaOneByTwoSingleLine{ B_{0} }
+                                    { b_{1} } }
+	                            { B_{2} } 
+=
+\FlaOneByTwo{ \FlaOneByTwoSingleLine{ \hat{B}_{0} } { \hat{b}_{1} } } 
+            { \hat{B}_{2} U_{22}^{-T}  }
+\wedge \ldots
+}
+
+% Step 7: state after update
+\renewcommand{\afterupdate}{
+\FlaOneByTwo{ B_{0} }{\FlaOneByTwoSingleLine{ b_{1} } { B_{2} }  }
+=
+\FlaOneByTwo { \hat{B}_{0} }
+             { \FlaOneByTwoSingleLine { ( \hat{b}_{1} - B_{2} u_{12} ) \upsilon_{11}^{-1} } 
+                                      { \hat{B}_{2} U_{22}^{-T} } }
+\wedge \ldots
+}
+
+% Step 8: update
+\renewcommand{\update}{
+\begin{minipage}[t]{4in}
+\noindent
+% \FlaStartCompute \\
+$ b_1 \becomes ( \hat{b}_{1} - B_{2} u_{12} ) \upsilon_{11}^{-1} $ \\
+% \FlaEndCompute \\
+\end{minipage}
+}
+
+% Given the commands defined above, the
+% command \worksheet generates the annotated
+% algorithm
+
+\begin{figure}[htbp]
+\worksheet
+\caption{Annotated unblocked algorithm for loop-invariant 1.}
+\label{fig:ws:utrsm_rut}
+\end{figure}
+
+%By recognizing that $ \hat{B} $ is never referenced we can eliminate
+%all parts of the algorithm that refer to this matrix, yielding the
+%final algorithm given in Fig.~\ref{fig:alg:utrsm_rut}.
+
+% We now redefine some of the commands
+% used to generate Fig. 4.2, taking out all references
+% to \hat{B} to come up with the algorithm in Fig. 4.3.
+
+% Step 4
+%\renewcommand{\partitionings}{
+%$ 
+%B \rightarrow \FlaTwoByOne{ B_{T} }
+%                          { B_{B} }
+%$
+%and
+%$ 
+%L \rightarrow \FlaTwoByTwo{ L_{TL} }{ 0 }
+%                          { L_{BL} }{ L_{BR} }
+%$
+%}
+%\renewcommand{\partitionsizes}{
+%$ B_{B} $ has $ 0 $ rows
+%and $ L_{BR} $ is $ 0 \times 0 $
+%}
+%
+%% Step 5a
+%\renewcommand{\repartitionings}{
+%$ 
+%\FlaTwoByOne{ B_T }{ B_B } 
+%\rightarrow
+%\FlaThreeByOneT{ B_0 }{ b_1^T }{ B_2 }
+%$
+%and
+%$ \FlaTwoByTwo{ L_{TL} }{ 0 }
+%            { L_{BL} }{ L_{BR} }
+%\rightarrow
+%\FlaThreeByThreeTL{ L_{00} }{ 0 }{ 0 }
+%                { l_{10}^T }{ \lambda_{11} }{ 0 }
+%                { L_{20} }{ l_{21} }{ L_{22} }
+%$
+%}
+%\renewcommand{\repartitionsizes}{
+%$ b_1^T $ is a row 
+%and $ \lambda_{11} $ is a scalar
+%}
+%
+%% Step 5b
+%\renewcommand{\moveboundaries}{%
+%$ 
+%\FlaTwoByOne{ B_T }{ B_B } 
+%\leftarrow
+%\FlaThreeByOneB{ B_0 }{ b_1^T }{ B_2 }
+%$
+%and
+%$ \FlaTwoByTwo{ L_{TL} }{ 0 }
+%            { L_{BL} }{ L_{BR} }
+%\leftarrow
+%\FlaThreeByThreeBR{ L_{00} }{ 0 }{ 0 }
+%                { l_{10}^T }{ \lambda_{11} }{ 0 }
+%                { L_{20} }{ l_{21} }{ L_{22} }
+%$
+%}
+%
+%% The command \FlaAlgorithm now generates the 
+%% algorithm without annotations
+%
+%\begin{figure}[htbp]
+%\FlaAlgorithm
+%\caption{Unblocked algorithm for loop-invariant 1.}
+%\label{fig:alg:utrsm_rut}
+%\end{figure}
+
+\subsubsection{Blocked Algorithms}
+
+In order to cast the algorithm to be rich in matrix-matrix
+multiplications, the repartitioning and redefinition of the
+submatrices in steps 5a and 5b in Fig.~\ref{fig:ws:utrsm_rut_blk}
+expose multiple rows and/or columns at a time.  Block size $ b $ can
+be chosen to be any size that does not exceed the number of rows in $
+B_L $.  Again $ \QBefore $ is obtained by plugging the repartitioning
+in Step 6 into $ \PInv $ while $ \QAfter $ is obtained by plugging the
+redefinition of the quadrants in Step 7 into $ \PInv $.  The update in
+Step 8 is now obtained by comparing the state in Steps 6 and 7.  The
+bulk of the computation is now in the update 
+$ B_1 \becomes( \hat{B}_{1} - B_{2} U_{12}^T ) U_{11}^{-1} $ .
+
+% Redefine the commands that generate the annotated 
+% algorithm for the blocked algorithm
+
+% Define the blocksize that appears in step 5a
+\renewcommand{\blocksize}{ b }
+%
+
+% Step 5a
+\renewcommand{\repartitionings}{
+$ 
+\FlaOneByTwo{ B_L }
+            { B_R } 
+\rightarrow
+\FlaOneByThreeL{ B_0 }
+               { B_1 }
+               { B_2 },
+\FlaOneByTwo{ \hat{B}_L }
+            { \hat{B}_R } 
+\rightarrow
+\FlaOneByThreeL{ \hat{B}_0 }
+               { \hat{B}_1 }
+               { \hat{B}_2 }
+$ \\
+and
+$ 
+\FlaTwoByTwo{ U_{TL} }{ U_{TR} }
+            {   0    }{ U_{BR} } 
+\rightarrow
+\FlaThreeByThreeTL{ U_{00} } { U_{01} } { U_{02} }
+                  {   0    } { U_{11} } { U_{12} }
+                  {   0    } {   0    } { U_{22} }
+$
+}
+%
+\renewcommand{\repartitionsizes}{
+$ B_1 $ and $ \hat{B}_1 $ have columns 
+and $ U_{11} $ is $ b \times b $
+}
+
+% Step 5b
+\renewcommand{\moveboundaries}{%
+$
+\FlaOneByTwo{ B_L }
+            { B_R } 
+\leftarrow
+\FlaOneByThreeR{ B_0 } { B_1 } { B_2 },
+\FlaOneByTwo{ \hat{B}_L }
+            { \hat{B}_R } 
+\leftarrow
+\FlaOneByThreeR{ \hat{B}_0 } { \hat{B}_1 } { \hat{B}_2 }
+$ \\
+and
+$ 
+\FlaTwoByTwo{ U_{TL} }{ U_{TR} }
+            {    0   }{ U_{BR} } \leftarrow
+\FlaThreeByThreeBR{ U_{00} } { U_{01} } { U_{02} }
+                  {   0    } { U_{11} } { U_{12} }
+                  {   0    } {   0    } { U_{22} }
+$
+}
+
+% Step 6
+\renewcommand{\beforeupdate}{
+\FlaOneByTwo{ \FlaOneByTwoSingleLine{ B_{0} }
+                                    { B_{1} } }
+	                            { B_{2} } 
+=
+\FlaOneByTwo{ \FlaOneByTwoSingleLine{ \hat{B}_{0} } { \hat{B}_{1} } } 
+            { \hat{B}_{2} U_{22}^{-T}  }
+\wedge \ldots
+}
+
+% Step 7
+\renewcommand{\afterupdate}{
+\FlaOneByTwo{ B_{0} }{\FlaOneByTwoSingleLine{ B_{1} } { B_{2} }  }
+=
+\FlaOneByTwo { \hat{B}_{0} }
+             { \FlaOneByTwoSingleLine { ( \hat{B}_{1} - B_{2} U_{12} ) U_{11}^{-1} } 
+                                      { \hat{B}_{2} U_{22}^{-T} } }
+\wedge \ldots
+}
+
+% Step 8
+\renewcommand{\update}{
+\begin{minipage}[t]{4in}
+\noindent
+% \FlaStartCompute \\
+$ B_1 \becomes ( \hat{B}_{1} - B_{2} U_{12} ) U_{11}^{-1} $\\
+% \FlaEndCompute \\
+\end{minipage}
+}
+
+% Generate the annotated algorithm in Fig. 4.4
+\begin{figure}[htbp]
+\worksheet
+\caption{Annotated blocked algorithm for loop-invariant 1.}
+\label{fig:ws:utrsm_rut_blk}
+\end{figure}
+%
+
+\subsubsection{Implementation}
+
+Sequential implementations for the unblocked and blocked algorithms
+for this loop-invariant using FLAME are given in
+Figs.~\ref{fig:trsm_rut_lazy_unb}--\ref{fig:trsm_rut_lazy_blk}.
+
+\begin{figure}[htbp]
+\footnotesize
+\begin{quote}
+\listinginput{1}{trsm_rut/sequential/Trsm_right_upper_trans_unb.c}
+\end{quote}
+\caption{Unblocked algorithm for loop-invariants 1 and 2 using FLAME.}
+\label{fig:trsm_rut_lazy_unb}
+\end{figure}
+
+\begin{figure}[htbp]
+\footnotesize
+\index{const}{\tt FLA\un RECURSIVE}%
+\begin{quote}
+\listinginput{1}{trsm_rut/sequential/Trsm_right_upper_trans_blk.c}
+\end{quote}
+\caption{Blocked algorithm for loop-invariants 1 and 2 using FLAME.
+Recursion is optionally supported.}
+\label{fig:trsm_rut_lazy_blk}
+\end{figure}
+
+\subsection{Loop-invariant 2}
+
+We now examine the loop-invariant
+\begin{equation}
+\label{eqn:utrsm_rut:p3}
+\PInv: 
+\FlaOneByTwo{ B_L}{B_R} =
+\FlaOneByTwo{ \hat{B}_{L} - B_{R} U_{TR}^{T} }
+            { \hat{B}_{R} U_{BR}^{-T}        }
+\wedge
+\ldots
+\end{equation}
+Comparing the loop-invariant in (\ref{eqn:utrsm_rut:p3}) with the
+postcondition $ B = \hat{B} U^{-T} $ we see again that {\em if} $U=U_{BR}$,
+$ B = B_R $, and $ \hat{B} = \hat{B}_R $ then the loop-invariant
+implies the postcondition, i.e., that the desired result has been
+computed.
+%
+The initialization in Step 4 in Fig.~\ref{fig:ws:utrsm_rut:var2}
+is the same as that in Step 4 in Fig.~\ref{fig:ws:utrsm_rut}.
+The fact that for this partitioning of $ B $, $ \hat{B} $, and $ L $,
+$
+\FlaOneByTwo{ B_L}{B_R} =
+\FlaOneByTwo{ \hat{B}_{L} - B_{R} U_{TR}^{T} }
+            { \hat{B}_{R} U_{BR}^{-T}        }
+$
+and the precondition implies the other parts of
+the loop-invariant, this initialization has
+the desired properties.
+%
+Similarly, the loop-guard is identical to
+the one for loop-invariant 1.
+
+\subsubsection{Unblocked algorithm}
+
+The repartitionings in Step 5a in Fig.~\ref{fig:ws:utrsm_rut:var2}
+result in the state:
+\begin{equation}
+\QBefore: 
+\FlaOneByTwo{ \FlaOneByTwoSingleLine{ B_{0} }
+                                    { b_{1} } }
+	                            { B_{2} } 
+=
+\FlaOneByTwo{ \FlaOneByTwoSingleLine{ \hat{B}_0 }
+                                    { \hat{b}_1 } -
+	      B_2
+              \FlaTwoByOneSingleLine{ U_{02}     } 
+                                    { u_{12}^{T} }^{T} }
+             { \hat{B}_{2}U_{22}^{-T} }
+\wedge \ldots
+\end{equation}
+Applying the matrix transpose results in
+\[
+\QBefore: 
+\FlaOneByTwo{ \FlaOneByTwoSingleLine{ B_{0} }
+                                    { b_{1} } }
+	                            { B_{2} } 
+=
+\FlaOneByTwo{ \FlaOneByTwoSingleLine{ \hat{B}_0 }
+                                    { \hat{b}_1 } -
+	      B_2
+              \FlaOneByTwoSingleLine{ U_{02}^{T} } 
+                                    { u_{12}     } }
+             { \hat{B}_{2}U_{22}^{-T} } \\
+\wedge \ldots
+\]
+or
+\begin{equation}
+\label{eqn:utrsm_rut:var2:before}
+\QBefore: 
+\FlaOneByTwo{ \FlaOneByTwoSingleLine{ B_{0} }
+                                    { b_{1} } }
+	                            { B_{2} } 
+=
+\FlaOneByTwo{ \FlaOneByTwoSingleLine{ \hat{B}_0 - B_{2}U_{02}^T }
+                                    { \hat{b}_1 -  B_{2}u_{12}   } }
+	    { \hat{B}_{2}U_{22}^{-T} } \\
+\wedge \ldots
+\end{equation}
+before the update.
+The redefinition in Step 5b in Fig.~\ref{fig:ws:utrsm_rut:var2}
+means that the following state
+must result from the update:
+\[
+\QAfter: 
+\FlaOneByTwo{ B_{0} }{ \FlaOneByTwoSingleLine{ b_{1} } { B_{2} }  }
+=
+\FlaOneByTwo { \hat{B}_0 -
+               \FlaOneByTwoSingleLine{ b_1 } { B_2 }
+               \FlaTwoByOneSingleLine{ u_{01}^T  } 
+                                     { U_{02}^T  } }
+             { \FlaOneByTwoSingleLine{ \hat{b}_{1} } { \hat{B}_{2} }
+	     { \FlaTwoByTwoSingleLine { \upsilon_{11} } { u_{12}^{T} }
+	                              {      0        } { U_{22}     } }^{-T} } 
+\wedge \ldots
+\]
+Applying matrix transposition and inversion to $ U $ leaves us
+\[
+\QAfter: 
+\FlaOneByTwo{ B_{0} }{ \FlaOneByTwoSingleLine{ b_{1} } { B_{2} }  }
+=
+\FlaOneByTwo { \hat{B}_0 -
+               \FlaOneByTwoSingleLine{ b_1 } { B_2 }
+               \FlaTwoByOneSingleLine{ u_{01}^T  } 
+                                     { U_{02}^T  } }
+             { \FlaOneByTwoSingleLine{ \hat{b}_{1} } { \hat{B}_{2} }
+	       \FlaTwoByTwoSingleLine { \upsilon_{11}^{-1}                 } {       0     }
+                                      { -U_{22}^{-T} u_{12} \upsilon_{11}^{-1} } { U_{22}^{-T} } }
+\wedge \ldots
+\]
+and after various matrix multiplications and simplifications
+\begin{equation}
+\label{eqn:utrsm_rut:var2:after}
+\QAfter: 
+\FlaOneByTwo{ B_{0} }{ \FlaOneByTwoSingleLine{ b_{1} } { B_{2} }  }
+=
+\FlaOneByTwo { ( \hat{B}_0 - B_{2} U_{02}^{T} ) - b_{1} u_{01}^{T} }
+             {
+               \FlaOneByTwoSingleLine { ( \hat{b}_1 - B_2 u_{12} ) \upsilon_{11}^{-1} }
+                                      { \hat{B}_{2} U_{22}^{-T} } } 
+\wedge \ldots
+\end{equation}
+
+
+Comparing 
+(\ref{eqn:utrsm_rut:var2:before}) and
+(\ref{eqn:utrsm_rut:var2:after})
+we find that the update
+\begin{eqnarray*}
+& B_0   & \becomes B_0 -  b_{1} u_{01}^T  \\
+& b_{1} & \becomes \hat{b}_{1} \upsilon_{11}^{-1}
+\end{eqnarray*}
+is required to change the state from $ \QBefore $
+to $ \QAfter $.
+
+
+%Again one recognizes that $ \hat{B} $ is never
+%referenced and can be eliminated from the algorithm.
+
+% Define the commands to generate the annotated
+% algorithm in Fig. 4.7.
+
+% Step 2
+\renewcommand{\invariant}{
+\FlaOneByTwo{ B_L}{B_R} =
+\FlaOneByTwo{ \hat{B}_{L} - B_{R} U_{TR}^{T} }
+            { \hat{B}_{R} U_{BR}^{-T}        }
+\wedge
+\ldots
+}
+
+% Step 3
+\renewcommand{\guard}{ \neg \SameSize( B, B_{BR} ) }
+
+% Step 4
+\renewcommand{\partitionings}{
+$ 
+B \rightarrow \FlaOneByTwo{ B_L }
+                          { B_R }
+$,
+$ 
+\hat{B} \rightarrow \FlaOneByTwo{ \hat{B}_L }
+                                { \hat{B}_R }
+$, and
+$ 
+U \rightarrow \FlaOneByTwo{ U_{TL} }{ U_{TR} }
+                          {   0    }{ U_{BR} }
+$
+}
+\renewcommand{\partitionsizes}{
+$ B_R $ and $ \hat{B}_R $ have $ 0 $ rows
+and $ U_{BR} $ is $ 0 \times 0 $
+}
+
+% Step 5a
+\renewcommand{\repartitionings}{
+$ 
+\FlaOneByTwo{ B_L }
+            { B_R } 
+\rightarrow
+\FlaOneByThreeL{ B_0 }
+               { b_1 }
+               { B_2 },
+\FlaOneByTwo{ \hat{B}_L }
+            { \hat{B}_R } 
+\rightarrow
+\FlaOneByThreeL{ \hat{B}_0 }
+               { \hat{b}_1 }
+               { \hat{B}_2 }
+$ \\
+and
+$ 
+\FlaTwoByTwo{ U_{TL} }{ U_{TR} }
+            {   0    }{ U_{BR} } 
+\rightarrow
+\FlaThreeByThreeTL{ U_{00} } { u_{01}        } { U_{02}     }
+                  {   0    } { \upsilon_{11} } { u_{12}^{T} }
+                  {   0    } {    0          } { U_{22}     }
+$
+}
+\renewcommand{\repartitionsizes}{
+$ b_1 $ and $ \hat{b}_1 $ are columns 
+and $ \upsilon_{11} $ is a scalar
+ }
+
+% Step 5b
+\renewcommand{\moveboundaries}{
+$
+\FlaOneByTwo{ B_L }
+            { B_R } 
+\leftarrow
+\FlaOneByThreeR{ B_0 } { b_1 } { B_2 },
+\FlaOneByTwo{ \hat{B}_L }
+            { \hat{B}_R } 
+\leftarrow
+\FlaOneByThreeR{ \hat{B}_0 } { \hat{b}_1 } { \hat{B}_2 }
+$ \\
+and
+$ 
+\FlaTwoByTwo{ U_{TL} }{ U_{TR} }
+            {    0   }{ U_{BR} } \leftarrow
+\FlaThreeByThreeBR{ U_{00} } { u_{01}        } { U_{02}     }
+                  {   0    } { \upsilon_{11} } { u_{12}^{T} }
+                  {   0    } {      0        } { U_{22}     }  
+$
+}
+
+% Step 6
+\renewcommand{\beforeupdate}{
+\FlaOneByTwo{ \FlaOneByTwoSingleLine{ B_{0} }
+                                    { b_{1} } }
+	                            { B_{2} } 
+=
+\FlaOneByTwo{ \FlaOneByTwoSingleLine{ \hat{B}_0 - B_{2}U_{02}^T }
+                                    { \hat{b}_1 - B_2 u_{12}   } }
+	    { \hat{B}_{2}U_{22}^{-T} }
+}
+
+% Step 7
+\renewcommand{\afterupdate}{
+\FlaOneByTwo{ B_{0} }{\FlaOneByTwoSingleLine{ b_{1} } { B_{2} }  }
+=
+\FlaOneByTwo { ( \hat{B}_0 - B_{2} U_{02}^{T} ) - b_{1} u_{01}^{T} }
+             {
+               \FlaOneByTwoSingleLine { ( \hat{b}_1 - B_2 u_{12} ) \upsilon_{11}^{-1} }
+                                      { \hat{B}_{2} U_{22}^{-T} } } 
+\wedge \ldots
+}
+
+% Step 8
+\renewcommand{\update}{
+\begin{minipage}[t]{4in}
+\noindent
+% \FlaStartCompute \\
+$ B_0   \becomes B_0 -  b_{1} u_{01}^T $ \\
+$ b_{1} \becomes \hat{b}_{1} \upsilon_{11}^{-1} $ \\
+% \FlaEndCompute \\
+\end{minipage}
+}
+
+% Generate figure 4.7
+\begin{figure}[htbp]
+\worksheet
+\caption{Annotated unblocked algorithm for loop-invariant 2.}
+\label{fig:ws:utrsm_rut:var2}
+\end{figure}
+
+\subsubsection{Blocked Algorithms}
+
+Again, the algorithm can be cast to be rich in
+matrix-matrix multiplications by marching through
+the matrices multiple rows and/or columns at a time.
+The resulting algorithm is given in 
+Fig.~\ref{fig:ws:utrsm_rut:var2:blk}.
+
+% Redefine commands to generate Fig. 4.8
+
+% Step 5a
+\renewcommand{\repartitionings}{
+$ 
+\FlaOneByTwo{ B_L }
+            { B_R } 
+\rightarrow
+\FlaOneByThreeL{ B_0 }
+               { B_1 }
+               { B_2 },
+\FlaOneByTwo{ \hat{B}_L }
+            { \hat{B}_R } 
+\rightarrow
+\FlaOneByThreeL{ \hat{B}_0 }
+               { \hat{B}_1 }
+               { \hat{B}_2 }
+$ \\
+and
+$ 
+\FlaTwoByTwo{ U_{TL} }{ U_{TR} }
+            {   0    }{ U_{BR} } 
+\rightarrow
+\FlaThreeByThreeTL{ U_{00} } { U_{01} } { U_{02} }
+                  {   0    } { U_{11} } { U_{12} }
+                  {   0    } {    0   } { U_{22} }
+$
+}
+%
+\renewcommand{\repartitionsizes}{
+$ B_1 $ and $ \hat{B}_1 $ have columns 
+and $ U_{11} $ is $ b \times b $
+}
+
+% Step 5b
+\renewcommand{\moveboundaries}{%
+$ 
+\FlaOneByTwo{ B_L }
+            { B_R } 
+\leftarrow
+\FlaOneByThreeR{ B_0 } { B_1 } { B_2 },
+\FlaOneByTwo{ \hat{B}_L }
+            { \hat{B}_R } 
+\leftarrow
+\FlaOneByThreeR{ \hat{B}_0 } { \hat{B}_1 } { \hat{B}_2 }
+$ \\
+and
+$ 
+\FlaTwoByTwo{ U_{TL} }{ U_{TR} }
+            {    0   }{ U_{BR} } \leftarrow
+\FlaThreeByThreeBR{ U_{00} } { U_{01} } { U_{02} }
+                  {   0    } { U_{11} } { U_{12} }
+                  {   0    } {    0   } { U_{22} }  
+$
+}
+
+% Step 6
+\renewcommand{\beforeupdate}{
+\FlaOneByTwo{ \FlaOneByTwoSingleLine{ B_{0} }
+                                    { B_{1} } }
+	                            { B_{2} } 
+=
+\FlaOneByTwo{ \FlaOneByTwoSingleLine{ \hat{B}_0 - B_{2}U_{02}^T }
+                                    { \hat{B}_1 - B_2 U_{12}   } }
+	    { \hat{B}_{2}U_{22}^{-T} }
+\wedge \ldots
+}
+
+% Step 7
+\renewcommand{\afterupdate}{
+\FlaOneByTwo{ B_{0} }{\FlaOneByTwoSingleLine{ B_{1} } { B_{2} }  }
+=
+\FlaOneByTwo { ( \hat{B}_0 - B_{2} U_{02}^{T} ) - B_{1} U_{01}^{T} }
+             {
+               \FlaOneByTwoSingleLine { ( \hat{B}_1 - B_2 U_{12} ) U_{11}^{-1} }
+                                      { \hat{B}_{2} U_{22}^{-T} } } 
+\wedge \ldots
+}
+
+% Step 8
+\renewcommand{\update}{
+\begin{minipage}[t]{4in}
+\noindent
+% \FlaStartCompute \\
+$ B_0 \becomes B_0 -  B_{1} U_{01}^T $ \\
+$ B_1 \becomes \hat{B}_{1} U_{11}^{-1} $ \\
+% \FlaEndCompute \\
+\end{minipage}
+}
+
+% Generate Fig. 4.8
+\begin{figure}[htbp]
+\worksheet
+\caption{Annotated blocked algorithm for loop-invariant 2.}
+\label{fig:ws:utrsm_rut:var2:blk}
+\end{figure}
+%
+
+\subsubsection{Implementation}
+
+Sequential implementations for the unblocked and blocked algorithms
+for this loop-invariant using FLAME are given in
+Figs.~\ref{fig:trsm_rut_lazy_unb}--\ref{fig:trsm_rut_lazy_blk}.
+
+\section{Performance}
+
+In this section, we discuss the performance attained by the different
+variants for computing $ B \leftarrow B U^{-T} $.  In each of the Figs.
+~\ref{fig:trsm_rut:lazy-row-lazy:ATLAS} and
+~\ref{fig:trsm_rut:lazy-row-lazy:ITXGEMM}, we compare the performance
+attained by five different implementations:
+\begin{itemize}
+\item{Reference}
+{\tt DTRSM} as implemented as part of ATLAS,
+\item{FLAME}
+{\tt FLA\_Trsm} implemented as part of FLAME
+as of this writing,
+\item{Unblocked}
+the unblocked implementation in Fig.~\ref{fig:trsm_rut_lazy_unb},
+\item{Blocked}
+the blocked implementation in Fig.~\ref{fig:trsm_rut_lazy_blk}
+called with 
+{\tt rec == 
+\index{const}{\tt FLA\un NON\un RECURSIVE}%
+FLA\_NON\_RECURSIVE}, and
+\item{Recursive}
+the blocked implementation in Fig.~\ref{fig:trsm_rut_lazy_blk}
+called with 
+{\tt rec == 
+\index{const}{\tt FLA\un RECURSIVE}%
+FLA\_RECURSIVE}.
+\end{itemize}
+In Fig.~\ref{fig:trsm_rut:lazy-row-lazy:ATLAS}, all FLAME
+implementations are based on the matrix-matrix multiplication ({\tt
+DGEMM}) provided by ATLAS.  Notice that for the platform on which we
+performed the experiments, multiples of 40 are good block sizes when
+using the ATLAS matrix-matrix multiplication kernel.  We note that the
+unblocked algorithms perform badly, since they are rich in
+matrix-vector operations that do not benefit much from cache memories.
+The blocked algorithms performed better for relatively small block
+sizes ({\tt nb\_alg=40}) than for larger block sizes ({\tt
+nb\_alg=80}).  The reason for this is that too much of the
+computation is performed in the subprogram for which the unblocked
+algorithm is used.  The recursive implementations benefit from larger
+block sizes, since they overcome this problem that plagues the blocked
+algorithm.  In addition they benefit from the fact that the {\tt
+DGEMM} kernel performs better for larger blocks.
+
+In Fig.~\ref{fig:trsm_rut:lazy-row-lazy:ITXGEMM}, all FLAME
+implementations are based on the matrix-matrix multiplication ({\tt
+DGEMM}) provided by ITXGEMM.  This time, as discussed in
+Section~\ref{sec:mmmult:impact}, 128 is a magic block size.  Again, as
+expected, the unblocked implementations perform badly.  Again, the
+blocked algorithm benefits from smaller block sizes and the recursive
+algorithm performs best.  
+
+%It is interesting to note that the variant 1
+%algorithm performs much better for small problem sizes when the
+%outer-most block size is chosen to be 128.  This is probably mostly
+%due to the fact that the unblocked lazy algorithm performs better.
+
+It is interesting to note that asymptotically, the recursive implementation
+for variant 1 performs somewhat worse than the recursive implementation for
+variant 2, when ATLAS is used for the matrix-matrix multiply
+(Fig.~\ref{fig:trsm_rut:lazy-row-lazy:ATLAS}).  We attribute this to
+the fact that when $ m $ is relatively small and $ n $ and $ k $ are
+large (e.g., in a panel-matrix multiply), the ATLAS matrix-matrix
+multiplication does not perform as well as when $ k $ is relatively
+small and $ m $ and $ n $ are large (e.g., in a panel-panel multiply).
+Since the variant 1 and variant 2 algorithms are rich in panel-matrix and
+panel-panel multiplies, respectively, the variant 1 algorithm attains
+better performance.  This is not observed as dramatically in in the
+experiments where ITXGEMM was used for matrix-matrix multiplication
+(Fig.~\ref{fig:trsm_rut:lazy-row-lazy:ITXGEMM}).  This is due to the
+fact that ITXGEMM attains performance that is similar regardless of
+the shape of the matrix.
+
+%Notice that the right-moving algorithms perform miserably
+%(Fig.~\ref{fig:trsm_rut:right-moving}).  We point out that the blocked
+%and recursive algorithms attain essentially the same performance as
+%the unblocked algorithm.  This is not surprising since all computation
+%is in a triangular matrix-vector multiply, which does not perform very
+%well, regardless of how the blocking proceeds.
+
+Since in the recursive algorithms at each level a different variant
+could be called to solve the subproblem, it may be possible to improve
+performance further by combining different variants.  We have not yet
+studied this.
+
+\begin{figure}[htbp]
+\begin{center}
+\begin{tabular}{c | c}
+Variant 1 & Variant 2 \\ \hline
+& \\
+\psfig{figure=trsm_rut/graphs/FLA_trsm_rut_variant1_40.eps,width=3.0in,height=3.0in} &
+\psfig{figure=trsm_rut/graphs/FLA_trsm_rut_variant2_40.eps,width=3.0in,height=3.0in}
+\\ \hline
+& \\
+\psfig{figure=trsm_rut/graphs/FLA_trsm_rut_variant1_80.eps,width=3.0in,height=3.0in} &
+\psfig{figure=trsm_rut/graphs/FLA_trsm_rut_variant2_80.eps,width=3.0in,height=3.0in}
+\end{tabular}
+\end{center}
+\caption{Performance of the variant 1 (left) and variant 2 (right) 
+triangular matrix solve (with multiple RHS) algorithms for a block 
+size of $ 40 $ (top) and
+$ 80 $ (bottom).
+For these experiments, the ATLAS matrix-matrix multiplication
+kernel was used.}
+\label{fig:trsm_rut:lazy-row-lazy:ATLAS}
+\end{figure}
+
+%\begin{figure}[htbp]
+%\begin{center}
+%\begin{tabular}{c | c}
+%Row-Lazy & Lazy \\ \hline
+%& \\
+%\psfig{figure=trmm_lln/graphs/trmm_lln_rowlazy_wrt_L_32.eps,width=3.0in,height=3.0in} &
+%\psfig{figure=trmm_lln/graphs/trmm_lln_lazy_wrt_L_32.eps,width=3.0in,height=3.0in}
+%\\ \hline
+%& \\
+%\psfig{figure=trmm_lln/graphs/trmm_lln_rowlazy_wrt_L_128.eps,width=3.0in,height=3.0in} &
+%\psfig{figure=trmm_lln/graphs/trmm_lln_lazy_wrt_L_128.eps,width=3.0in,height=3.0in}
+%\end{tabular}
+%\end{center}
+%\caption{Performance of the row lazy (left) and lazy (right) (w.r.t. $ L $) 
+%lower triangular matrix-matrix multiplication 
+%algorithms for a block size of $ 32 $ (top) and
+%$ 128 $ (bottom).
+%For these experiments, the ITXGEMM matrix-matrix multiplication
+%kernel was used.}
+%\label{fig:trmm_lln:lazy-row-lazy:ITXGEMM}
+%\end{figure}
+

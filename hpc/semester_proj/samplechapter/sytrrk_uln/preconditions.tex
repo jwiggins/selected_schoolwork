@@ -1,0 +1,194 @@
+\begin{figure}
+\begin{center}
+\footnotesize
+{
+\setlength{\tabcolsep}{4pt}
+\begin{tabular}{| c | p{2.5in} | c | } \hline
+$ P_X: $
+
+$ \FlaTwoByTwo{ C_{TL} } { C_{TR} }
+              { \undetermined } { C_{BR} } =  $ & Comment &
+\footnotesize Feasible? \\ \hline \hline
+\footnotesize
+$
+\FlaTwoByTwo{ \hat{C}_{TL} }  { \hat{C}_{TR} }
+            { \undetermined } { \hat{C}_{BR} }
+$
+&
+&
+NO
+\\ \hline
+%
+%
+\footnotesize
+$
+\FlaTwoByTwo{ \hat{C}_{TL} } { \hat{C}_{TR} }
+            { \undetermined } { A_{BR}^T A_{BR} + \hat{C}_{BR} }
+$
+&
+Loop Invariant 2.
+&
+YES
+\\ \hline
+%
+%
+\footnotesize
+$
+\FlaTwoByTwo{ \hat{C}_{TL} }  { A_{BL}^T A_{BR} + \hat{C}_{TR} }
+            { \undetermined } { \hat{C}_{BR} }
+$
+&
+&
+NO
+\\ \hline
+%
+%
+\footnotesize
+$
+\FlaTwoByTwo{ \hat{C}_{TL} }  { A_{BL}^T A_{BR} + \hat{C}_{TR} }
+            { \undetermined } { A_{BR}^T A_{BR} + \hat{C}_{BR} }
+$
+&
+&
+YES
+\\ \hline
+%
+%
+\footnotesize
+$
+\FlaTwoByTwo{ A_{BL}^T A_{BL} + \hat{C}_{TL} } { \hat{C}_{TR} }
+            { \undetermined }                  { \hat{C}_{BR} }
+$
+&
+&
+NO
+\\ \hline
+%
+%
+\footnotesize
+$
+\FlaTwoByTwo{ A_{BL}^T A_{BL} + \hat{C}_{TL} } { \hat{C}_{TR} }
+            { \undetermined }                  { A_{BR}^T A_{BR} + \hat{C}_{BR} }
+$
+&
+&
+NO
+\\ \hline
+%
+%
+\footnotesize
+$
+\FlaTwoByTwo{ A_{BL}^T A_{BL} + \hat{C}_{TL} } { A_{BL}^T A_{BR} + \hat{C}_{TR} }
+            { \undetermined }                  { \hat{C}_{BR} }
+$
+&
+&
+NO
+\\ \hline
+%
+%
+\footnotesize
+$
+\FlaTwoByTwo{ A_{BL}^T A_{BL} + \hat{C}_{TL} } { A_{BL}^T A_{BR} + \hat{C}_{TR} }
+            { \undetermined }                  { A_{BR}^T A_{BR} + \hat{C}_{BR} }
+$
+&
+&
+NO
+\\ \hline
+\footnotesize
+$
+\FlaTwoByTwo{ A_{TL}^T A_{TL} + \hat{C}_{TL} }  { \hat{C}_{TR} }
+            { \undetermined } { \hat{C}_{BR} }
+$
+&
+&
+NO
+\\ \hline
+%
+%
+\footnotesize
+$
+\FlaTwoByTwo{ A_{TL}^T A_{TL} + \hat{C}_{TL} } { \hat{C}_{TR} }
+            { \undetermined } { A_{BR}^T A_{BR} + \hat{C}_{BR} }
+$
+&
+&
+NO
+\\ \hline
+%
+%
+\footnotesize
+$
+\FlaTwoByTwo{ A_{TL}^T A_{TL} + \hat{C}_{TL} }  { A_{BL}^T A_{BR} + \hat{C}_{TR} }
+            { \undetermined } { \hat{C}_{BR} }
+$
+&
+&
+NO
+\\ \hline
+%
+%
+\footnotesize
+$
+\FlaTwoByTwo{ A_{TL}^T A_{TL} + \hat{C}_{TL} }  { A_{BL}^T A_{BR} + \hat{C}_{TR} }
+            { \undetermined } { A_{BR}^T A_{BR} + \hat{C}_{BR} }
+$
+&
+&
+NO
+\\ \hline
+%
+%
+\footnotesize
+$
+\FlaTwoByTwo{ A_{TL}^T A_{TL} + A_{BL}^T A_{BL} + \hat{C}_{TL} } { \hat{C}_{TR} }
+            { \undetermined }                  { \hat{C}_{BR} }
+$
+&
+Loop Invariant 1.
+&
+YES
+\\ \hline
+%
+%
+\footnotesize
+$
+\FlaTwoByTwo{ A_{TL}^T A_{TL} + A_{BL}^T A_{BL} + \hat{C}_{TL} } { \hat{C}_{TR} }
+            { \undetermined }                  { A_{BR}^T A_{BR} + \hat{C}_{BR} }
+$
+&
+&
+NO
+\\ \hline
+%
+%
+\footnotesize
+$
+\FlaTwoByTwo{ A_{TL}^T A_{TL} + A_{BL}^T A_{BL} + \hat{C}_{TL} } { A_{BL}^T A_{BR} + \hat{C}_{TR} }
+            { \undetermined }                  { \hat{C}_{BR} }
+$
+&
+&
+YES
+\\ \hline
+%
+%
+\footnotesize
+$
+\FlaTwoByTwo{ A_{TL}^T A_{TL} + A_{BL}^T A_{BL} + \hat{C}_{TL} } { A_{BL}^T A_{BR} + \hat{C}_{TR} }
+            { \undetermined }                  { A_{BR}^T A_{BR} + \hat{C}_{BR} }
+$
+&
+&
+NO
+\\ \hline
+\end{tabular}
+}
+\end{center}
+\caption{Possible loop-invariants when partitioning
+$ C $ into quadrants.
+Here $ P_X $ is the most prominent part of the loop-invariant
+$ \PInv $.}
+\label{fig:sytrrk_uln_invariants}
+\end{figure}

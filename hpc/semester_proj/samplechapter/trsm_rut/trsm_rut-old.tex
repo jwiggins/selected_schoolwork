@@ -1,0 +1,1176 @@
+\index{op}{triangular solve!multiple RHSs}%
+\index{op}{triangular solve!multiple RHSs!$ B \leftarrow B U^{-T} $|(}%
+\chapter{Triangular Solve (with Multiple RHSs)\\
+$ B \leftarrow B U^{-T} $ }
+\label{chapter:trsm_rut}
+
+\ChapterAuthor{
+\index{author}{Van Zee, Field G.}
+Field G. Van Zee
+\\[0.1in]
+\index{author}{Walkup, Patrick J.}
+Patrick J. Walkup
+}
+
+\addtocontents{toc}{ {by {\bf Field G. Van Zee and Patrick J. Walkup}}}
+
+\status{Codes updated, graphs update, naming conventions
+checked}
+
+In this chapter, we discuss the computation of the
+solution of a triangular system with multiple right-hand-sides:
+\[
+B \leftarrow B U^{-T}
+\]
+where $ U $ is a $ m \times m $ upper triangular matrix
+and $ B $ is $ n \times m $.
+
+Let us consider
+\begin{equation}
+D = B U^{-T}
+\end{equation} 
+keeping in mind that $ D $ will
+overwrite $ B $.
+Notice that this is equivalent to solving
+\begin{equation}
+\label{eqn:utrsm1}
+D U^{T} = B 
+\end{equation} 
+for matrix $ D$.  
+Thus the name {\em triangular solve with multiple right-hand-sides} (RHSs).
+
+\section{Algorithms that start by splitting $ U $}
+\label{sec:teaml_ltrmmU}
+
+Partition
+\[
+U \rightarrow \FlaTwoByTwo{ U_{TL} }{ U_{TR} }
+                          {   0    }{ U_{BR} }
+\]
+where $ U_{BR} $ is $ k \times k $.
+Also, partition
+\[
+D \rightarrow \FlaOneByTwo{ D_{L} }
+                          { D_{R} },
+\quad
+\mbox{and}
+\quad
+B \rightarrow \FlaOneByTwo{ B_{L} }
+                          { B_{R} }
+\]
+where $ D_{L} $ and $ B_{L} $ have $ k$ cols.
+
+Now, (\ref{eqn:utrsm1}) becomes
+\[
+\FlaOneByTwo{ D_{L} }
+            { D_{R} }
+{\FlaTwoByTwo{ U_{TL} }{ U_{TR} }
+             {     0  }{ U_{BR} }}^{T}
+=
+\FlaOneByTwo{ D_{L} }
+            { D_{R} }
+\FlaTwoByTwo{ U_{TL}^{T} }{     0      }
+            { U_{TR}^{T} }{ U_{BR}^{T} }
+=
+\FlaOneByTwo{ B_{L} }
+            { B_{R} }
+\]
+Multiplying out the left-hand-side yields
+\[
+\FlaOneByTwo{ D_{L} U_{TL}^{T} + D_{R} U_{TR}^{T} }
+            { D_{R} U_{BR}^{T}  }
+=
+\FlaOneByTwo{ B_{L} }
+            { B_{R} }
+\]
+This in turn exposes the equalities
+\begin{eqnarray*}
+D_{L} U_{TL}^{T} + D_{R} U_{TR}^{T} &=& B_{L} \\
+D_{R} U_{BR}^{T}                    &=& B_{R}
+\end{eqnarray*}
+which must hold.
+Notice that these equalities are also 
+equivalent to
+\begin{eqnarray*}
+D_{L}  &=& ( B_{L} - D_{R} U_{TR}^{T} ) U_{TL}^{-T} \\
+D_{R}  &=&   B_{R} U_{BR}^{-T}
+\end{eqnarray*}
+Note that in order to test these equalities, their subexpressions must be evaluated in the following order \\
+\[
+B_{R} U_{BR}^{-T}
+\rightarrow 
+(B_{L} - D_{R} U_{TR}^{T}) 
+\rightarrow 
+(B_{L} - D_{R} U_{TR}^{T}) U_{TL}^{-T}
+\]
+where the terms to the left of an arrow must be evaluated before the terms to the right.\\ \\
+Possible contents of $ D $
+at this intermediate step are given
+in Fig.~\ref{fig:dtrsm:possibilities}.
+\begin{figure}[htbp]
+\begin{center}
+\begin{tabular}{| p{2.5in} | p{3.0in} | c |} \hline
+$ D $ contains & Comments & Viable?\\ \hline
+\begin{minipage}{2.5in}
+$
+\FlaOneByTwo{ B_L }
+            { B_R }
+$ 
+\end{minipage}
+&
+\begin{minipage}[c]{3in}
+This condition indicates no
+progress has been made.
+\end{minipage}
+&
+NO
+\\ \hline
+%
+%
+\begin{minipage}{2.5in}
+$
+\FlaOneByTwo{ B_L }
+            { B_{R} U_{BR}^{-T} }
+$ 
+\end{minipage}
+& 
+\begin{minipage}{3in}
+\end{minipage}
+&
+YES
+\\ \hline
+%
+%
+\begin{minipage}{2.5in}
+$
+\FlaOneByTwo{ B_L - D_{R} U_{TR}^{T} }
+            { B_R }
+$ 
+\end{minipage}
+& 
+\begin{minipage}{3in}
+This one is not a viable option since 
+it requires $ D_R $ without actually
+storing $ D_R $. (See ordered equalities above.)
+\end{minipage}
+&
+NO
+\\ \hline
+%
+%
+\begin{minipage}{2.5in}
+$
+\FlaOneByTwo{ B_L - D_{R} U_{TR}^{T} }
+            { B_{R} U_{BR}^{-T} }
+$ 
+\end{minipage}
+& 
+\begin{minipage}{3in}
+\end{minipage}
+&
+YES
+\\ \hline
+%
+%
+\begin{minipage}{2.5in}
+$
+\FlaOneByTwo{ ( B_{L} - D_R U_{TR}^{T} ) U_{TL}^{-T} }
+            { B_R }
+$ 
+\end{minipage}
+& 
+\begin{minipage}{3in}
+This one is not a viable option since 
+it requires $ D_R $ without actually
+storing $ D_R $. (See ordered equalities above.)
+\end{minipage}
+&
+NO
+\\ \hline
+%
+%
+\begin{minipage}{2.5in}
+$
+\FlaOneByTwo{ ( B_L - D_R U_{TR}^{T} ) U_{TL}^{-T} }
+            { B_R U_{BR}^{-T} }
+$ 
+\end{minipage}
+& 
+\begin{minipage}{3in}
+This condition indicates that the computation has completed.
+\end{minipage}
+&
+NO \\
+\hline
+\end{tabular}
+\end{center}
+\caption{Possible contents of $ D $ at 
+an intermediate step.}
+\label{fig:dtrsm:possibilities}
+\end{figure}
+Considering the comments in that table, only two viable
+conditions are left, the ones for which there are no comments.
+
+\subsection{Column-lazy algorithm (relative to $ U $)}
+
+Consider the condition that currently 
+\begin{equation}
+\label{eqn:utrsm2}
+D \quad \mbox{contains}
+\quad
+\FlaOneByTwo{ B_{L} - D_{R} U_{TR}^{T} }
+            { B_{R} U_{BR}^{-T}        }
+\end{equation}
+Notice that this indicates that 
+$ U_{TR} $ and $ U_{BR} $ have been used
+to update $ D $, which we will call
+a column-lazy algorithm relative to operand
+$ U $.
+
+In order to move the boundary that indicates
+how far the computation has proceeded, 
+that boundary must be moved right.
+Thus, this algorithm naturally moves through
+matrices $ D $ and $ B $ in the ``left'' direction.
+
+\subsubsection{Unblocked algorithm}
+
+Repartition 
+\[
+  \FlaOneByTwo{ D_{L} }
+              { D_{R} } \rightarrow
+  \FlaOneByThreeL{ D_{0} } 
+                 { d_{1} }
+                 { D_{2} }
+\]
+where
+$ d_{1} $ is a column.
+Similarly, we repartition 
+\[ 
+  \FlaOneByTwo{ B_{L} }
+              { B_{R} } \rightarrow
+  \FlaOneByThreeL{ B_{0} }
+                 { b_{1} }
+                 { B_{2} }
+\quad \mbox{and} \quad
+      \FlaTwoByTwo{ U_{TL} }{ U_{TR} }
+                  {   0    }{ U_{BR} } \rightarrow
+      \FlaThreeByThreeTL{ U_{00} } { u_{01}       } { U_{02}     }
+                        {   0    } { \upsilon_{11}} { u_{12}^{T} }
+                        {   0    } {    0         } { U_{22}     }  
+\]
+where $ b_{1} $ is a column and 
+$ \upsilon_{11} $ is a scalar.
+
+Notice that the double lines have meaning:
+\begin{equation}
+\label{eqn:teaml_ltrmm:meaning}
+\FlaOneByTwo  { D_L = \FlaOneByTwoSingleLine{ D_0 }
+                                            { d_1 } }
+              { D_R = D_2 },
+%
+\FlaOneByTwo  { B_L = \FlaOneByTwoSingleLine{ B_0 }
+                                            { b_1 } }
+              { B_R = B_2 }
+\end{equation}
+\[
+\mbox{ and }
+\FlaTwoByTwo  
+              { U_{TL} = \FlaTwoByTwoSingleLine{ U_{00} } { u_{01}        }
+                                               {   0    } { \upsilon_{11} } }
+              { U_{TR} = \FlaTwoByOneSingleLine{ U_{02}   } 
+                                               { u_{12}^T } }
+	      { 0 }
+              { U_{BR} = U_{22} } 
+\]
+Considering (\ref{eqn:utrsm2}) and these repartitionings, 
+$ D $ currently contains
+\begin{eqnarray*}
+\begin{array}{c @{\hspace{1pt}} c @{\hspace{1pt}} c @{\hspace{1pt}} c @{\hspace{1pt}} c} 
+\FlaOneByTwo{ B_{L} - D_{R} U_{TR}^{T} }
+            { B_{R} U_{BR}^{-T}        }
+&=& 
+\FlaOneByTwo{ \FlaOneByTwoSingleLine{ B_0 }
+                                    { b_1 } -
+	      D_2
+              \FlaOneByTwoSingleLine{ U_{02}^{T} } 
+                                    { u_{12}     } }
+             { B_{2}U_{22}^{-T} }
+ \\
+&=&
+\FlaOneByTwo{ \FlaOneByTwoSingleLine{ B_0 - D_{2}U_{02}^T }
+                                    { b_1 -  D_{2}u_{12}   } }
+	    { B_{2}U_{22}^{-T} }\\
+&=&
+\FlaOneByTwo{ \FlaOneByTwoSingleLine{ B_0 - D_{2}U_{02}^T }
+                                    { b_1 -  B_{2}U_{22}^{-T}u_{12}   } }
+	    { B_{2}U_{22}^{-T} }\\    
+\end{array}
+\end{eqnarray*}
+since $ D_{2} = B_{2}U_{22}^{-T} $. \\
+\\
+After moving the double lines ahead, in preparation
+of the next iteration, 
+\begin{equation}
+\label{eqn:teaml_ltrmm:meaning2}
+\FlaOneByTwo  { D_L = D_0 }
+              { D_R = \FlaOneByTwoSingleLine{ d_1 }
+                                            { D_2 } },
+\FlaOneByTwo  { B_L = B_0 }
+              { B_R = \FlaOneByTwoSingleLine{ b_1 }
+                                            { B_2 } }
+\end{equation}
+\[
+\mbox{ and }
+\FlaTwoByTwo  { U_{TL} = U_{00} }
+              { U_{TR} = \FlaOneByTwoSingleLine{ u_{01} } 
+                                               { U_{02} } }
+              { 0 }
+              { U_{BR} = \FlaTwoByTwoSingleLine{ \upsilon_{11} } { u_{12}^T }
+                                               { 0             } { U_{22}   } }
+\]
+After the double lines move (in other words, at the top of the loop 
+during the next iteration),
+the contents of $ D $ must equal
+\begin{eqnarray*}
+\begin{array}{c @{\hspace{1pt}} c @{\hspace{1pt}} c @{\hspace{1pt}} c @{\hspace{1pt}} c}
+\FlaOneByTwo{ B_{L} - D_{R} U_{TR}^{T} }
+            { B_{R} U_{BR}^{-T}        }
+&=& 
+\FlaOneByTwo { B_0 -
+               \FlaOneByTwoSingleLine{ d_1 } { D_2 }
+               \FlaTwoByOneSingleLine{ u_{01}^T  } 
+                                     { U_{02}^T  } }
+             { \FlaOneByTwoSingleLine{ b_{1} } { B_{2} }
+	       { \FlaTwoByTwoSingleLine { \upsilon_{11} } { u_{12}^{T} }
+	                                {      0        } { U_{22}     } }^{-T} } \\
+&=& 
+\FlaOneByTwo { B_0 -
+               \FlaOneByTwoSingleLine{ d_1 } { D_2 }
+               \FlaTwoByOneSingleLine{ u_{01}^T  } 
+                                     { U_{02}^T  } }
+             { \FlaOneByTwoSingleLine{ b_{1} } { B_{2} }
+	       { \FlaTwoByTwoSingleLine { \upsilon_{11} } {    0     }
+                                        {     u_{12}    } { U_{22}^T } }^{-1} } \\
+&=&
+\FlaOneByTwo { B_0 -
+               \FlaOneByTwoSingleLine{ d_1 } { D_2 }
+               \FlaTwoByOneSingleLine{ u_{01}^T  } 
+                                     { U_{02}^T  } }
+             { \FlaOneByTwoSingleLine{ b_{1} } { B_{2} }
+	       \FlaTwoByTwoSingleLine { \upsilon_{11}^{-1}                 } {       0     }
+                                      { -U_{22}^{-T} u_{12} \upsilon_{11}^{-1} } { U_{22}^{-T} } } \\
+&=&
+\FlaOneByTwo { B_0 -
+               \FlaOneByTwoSingleLine{ d_1 } { D_2 }
+               \FlaTwoByOneSingleLine{ u_{01}^T  } 
+                                     { U_{02}^T  } }
+             {
+               \FlaOneByTwoSingleLine { b_1 \upsilon_{11}^{-1} - B_{2}U_{22}^{-T}u_{12} \upsilon_{11}^{-1} }
+                                      { B_{2} U_{22}^{-T} } } \\
+&=&
+\FlaOneByTwo { B_0 -
+               \FlaOneByTwoSingleLine{ d_1 } { D_2 }
+               \FlaTwoByOneSingleLine{ u_{01}^T  } 
+                                     { U_{02}^T  } }
+             {
+               \FlaOneByTwoSingleLine { ( b_1 - B_{2}U_{22}^{-T}u_{12} ) \upsilon_{11}^{-1} }
+                                      { B_{2} U_{22}^{-T} } } \\
+&=&
+\FlaOneByTwo { B_0 - ( d_{1} u_{01}^{T} + D_{2} U_{02}^{T} ) }
+             {
+               \FlaOneByTwoSingleLine { d_1 = ( b_1 - B_{2}U_{22}^{-T}u_{12} ) \upsilon_{11}^{-1} }
+                                      { B_{2} U_{22}^{-T} } } \\
+&=&
+\FlaOneByTwo { ( B_0 - D_{2} U_{02}^{T} ) - d_{1} u_{01}^{T} }
+             {
+               \FlaOneByTwoSingleLine { d_1 = ( b_1 - B_{2}U_{22}^{-T}u_{12} ) \upsilon_{11}^{-1} }
+                                      { B_{2}U_{22}^{-T} } } \\
+\end{array}
+\end{eqnarray*}
+since 
+\[
+            \FlaTwoByTwoSingleLine{ \upsilon_{11} } {    0     }
+                                  {     u_{12}    } { U_{22}^T }^{-1}
+=
+            \FlaTwoByTwoSingleLine{ \upsilon_{11}^{-1}                     } {       0     }
+                                  { -U_{22}^{-T} u_{12} \upsilon_{11}^{-1} } { U_{22}^{-T} }
+\]
+Thus, the contents of $ D $ must be updated like:
+\begin{equation}
+\FlaOneByTwo{ \FlaOneByTwoSingleLine{ B_0 - D_{2}U_{02}^T }
+                                    { b_1 -  B_{2}U_{22}^{-T}u_{12}   } }
+	    { B_{2}U_{22}^{-T} }
+\rightarrow
+\end{equation}
+\[
+\FlaOneByTwo { ( B_0 - D_{2} U_{02}^{T} ) - d_{1} u_{01}^{T} }
+             {
+               \FlaOneByTwoSingleLine { d_1 = ( b_1 - B_{2} U_{22}^{-T} u_{12} ) \upsilon_{11}^{-1} }
+                                      { B_{2} U_{22}^{-T} } } \\
+\]
+Thus we conclude that
+an algorithm that maintains the condition in (\ref{eqn:utrsm2}) is
+given in Fig.~\ref{fig:utrsm:collazy_alg}~(left).
+Notice that the algorithm overwrites matrix $ B $ with the
+result $ B U^{-T} $.
+
+\subsubsection{Blocked algorithm}
+
+In order to derive a blocked algorithm, instead repartition like
+\[
+  \FlaOneByTwo{ D_{L} }
+              { D_{R} } \rightarrow
+  \FlaOneByThreeL{ D_{0} }
+                 { D_{1} }
+                 { D_{2} }
+\]
+where
+$ D_{1} $ is a block of $ b $ columns.
+Similarly, we repartition 
+\[ 
+  \FlaOneByTwo{ B_{L} }
+              { B_{R} } \rightarrow
+  \FlaOneByThreeL{ B_{0} }
+                 { B_{1} }
+                 { B_{2} }
+\quad \mbox{and} \quad
+      \FlaTwoByTwo{ U_{TL} }{ U_{TR} }
+                  {   0    }{ U_{BR} } \rightarrow
+      \FlaThreeByThreeTL{ U_{00} } { U_{01} } { U_{02} }
+                        {   0    } { U_{11} } { U_{12} }
+                        {   0    } {    0   } { U_{22} }  
+\]
+where $ B_{1} $ is a block of $ b $ columns and 
+$ U_{11} $ is a $ b \times b $.
+
+Again, the double lines have meaning:
+\begin{equation}
+\label{eqn:teaml_ltrmmB:meaning}
+\FlaOneByTwo  { D_L = \FlaOneByTwoSingleLine{ D_0 }
+                                            { D_1 } }
+              { D_R = D_2 },
+%
+\FlaOneByTwo  { B_L = \FlaOneByTwoSingleLine{ B_0 }
+                                            { D_1 } }
+              { B_R = B_2 }
+\end{equation}
+\[
+\mbox{ and }
+%
+\FlaTwoByTwo  
+              { U_{TL} = \FlaTwoByTwoSingleLine{ U_{00} } { U_{01} }
+                                               {   0    } { U_{11} } }
+              { U_{TR} = \FlaTwoByOneSingleLine{ U_{02} } 
+                                               { U_{12} } }
+	      { 0 }
+              { U_{BR} = U_{22} } 
+\]
+Considering (\ref{eqn:utrsm2}) and these repartitionings, 
+$ D $ currently contains
+\begin{eqnarray*}
+\begin{array}{c @{\hspace{1pt}} c @{\hspace{1pt}} c @{\hspace{1pt}} c @{\hspace{1pt}} c} 
+\FlaOneByTwo{ B_{L} - D_{R} U_{TR}^{T} }
+            { B_{R} U_{BR}^{-T}        }
+&=& 
+\FlaOneByTwo{ \FlaOneByTwoSingleLine{ B_0 }
+                                    { B_1 } -
+	      D_2
+              \FlaOneByTwoSingleLine{ U_{02}^{T} } 
+                                    { U_{12}     } }
+             { B_{2}U_{22}^{-T} } \\
+&=&
+\FlaOneByTwo{ \FlaOneByTwoSingleLine{ B_0 - D_{2}U_{02}^{T} }
+                                    { B_1 - D_{2}U_{12}     } }
+	    { B_{2}U_{22}^{-T} } \\
+&=&
+\FlaOneByTwo{ \FlaOneByTwoSingleLine{ B_0 - D_{2}U_{02}^{T}         }
+                                    { B_1 - B_{2}U_{22}^{-T}U_{12}  } }
+	    { B_{2}U_{22}^{-T} } \\    
+\end{array}
+\end{eqnarray*}
+since $ D_{2} = B_{2}U_{22}^{-T} $. \\
+\\
+After moving the double lines ahead, in preparation
+of the next iteration, 
+\begin{equation}
+\label{eqn:teaml_ltrmmB:meaning2}
+\FlaOneByTwo  { D_L = D_0 }
+              { D_R = \FlaOneByTwoSingleLine{ D_1 }
+                                            { D_2 } },
+\FlaOneByTwo  { B_L = B_0 }
+              { B_R = \FlaOneByTwoSingleLine{ B_1 }
+                                            { B_2 } }
+\end{equation}
+\[
+\mbox{ and }
+\FlaTwoByTwo  { U_{TL} = U_{00} }
+              { U_{TR} = \FlaOneByTwoSingleLine{ U_{01} } 
+                                               { U_{02} } }
+              { 0 }
+              { U_{BR} = \FlaTwoByTwoSingleLine{ U_{11} } { U_{12} }
+                                               {   0    } { U_{22} } }
+\]
+Thus, the contents of $ D $ must be updated like:
+\begin{eqnarray*}
+\begin{array}{c @{\hspace{1pt}} c @{\hspace{1pt}} c @{\hspace{1pt}} c @{\hspace{1pt}} c}
+\FlaOneByTwo{ B_{L} - D_{R} U_{TR}^{T} }
+            { B_{R} U_{BR}^{-T}        }
+&=& 
+\FlaOneByTwo { B_0 -
+               \FlaOneByTwoSingleLine{ D_1 } { D_2 }
+               \FlaTwoByOneSingleLine{ U_{01}^T  } 
+                                     { U_{02}^T  } }
+             { \FlaOneByTwoSingleLine{ B_{1} } { B_{2} }
+	       { \FlaTwoByTwoSingleLine { U_{11} } { U_{12} }
+	                                {   0    } { U_{22} } }^{-T} } \\
+&=& 
+\FlaOneByTwo { B_0 -
+               \FlaOneByTwoSingleLine{ D_1 } { D_2 }
+               \FlaTwoByOneSingleLine{ U_{01}^T  } 
+                                     { U_{02}^T  } }
+             { \FlaOneByTwoSingleLine{ B_{1} } { B_{2} }
+	       { \FlaTwoByTwoSingleLine { U_{11} } {    0     }
+                                        { U_{12} } { U_{22}^T } }^{-1} } \\
+&=&
+\FlaOneByTwo { B_0 -
+               \FlaOneByTwoSingleLine{ D_1 } { D_2 }
+               \FlaTwoByOneSingleLine{ U_{01}^T  } 
+                                     { U_{02}^T  } }
+             { \FlaOneByTwoSingleLine{ B_{1} } { B_{2} }
+	       \FlaTwoByTwoSingleLine {  U_{11}^{-1}                    } {       0     }
+                                      { -U_{22}^{-T} U_{12} U_{11}^{-1} } { U_{22}^{-T} } } \\
+&=&
+\FlaOneByTwo { B_0 -
+               \FlaOneByTwoSingleLine{ D_1 } { D_2 }
+               \FlaTwoByOneSingleLine{ U_{01}^T  } 
+                                     { U_{02}^T  } }
+             { \FlaOneByTwoSingleLine { B_1 U_{11}^{-1} - B_{2}U_{22}^{-T}U_{12} U_{11}^{-1} }
+                                      { B_{2} U_{22}^{-T} } } \\
+&=&
+\FlaOneByTwo { B_0 -
+               \FlaOneByTwoSingleLine{ D_1 } { D_2 }
+               \FlaTwoByOneSingleLine{ U_{01}^T  } 
+                                     { U_{02}^T  } }
+             { \FlaOneByTwoSingleLine { ( B_{1} - B_{2}U_{22}^{-T}U_{12} ) U_{11}^{-1} }
+                                      { B_{2} U_{22}^{-T} } } \\
+&=&
+\FlaOneByTwo { B_0 - ( D_{1} U_{01}^{T} + D_{2} U_{02}^{T} ) }
+             { \FlaOneByTwoSingleLine { D_{1} = ( B_{1} - B_{2}U_{22}^{-T}U_{12} ) U_{11}^{-1} }
+                                      { B_{2} U_{22}^{-T} } } \\
+&=&
+\FlaOneByTwo { ( B_0 - D_{2} U_{02}^{T} ) - D_{1} U_{01}^{T} }
+             { \FlaOneByTwoSingleLine { D_{1} = ( B_{1} - B_{2}U_{22}^{-T}U_{12} ) U_{11}^{-1} }
+                                      { B_{2}U_{22}^{-T} } } \\
+\end{array}
+\end{eqnarray*}
+Thus, the contents of $ D $ must be updated like:
+\begin{equation}
+\FlaOneByTwo{ \FlaOneByTwoSingleLine{ B_0 - D_{2}U_{02}^{T} }
+                                    { B_1 - B_{2}U_{22}^{-T}U_{12}  } }
+	    { B_{2}U_{22}^{-T} }
+\rightarrow
+\end{equation}
+\[
+\FlaOneByTwo { ( B_0 - D_{2}U_{02}^{T} ) - D_{1}U_{01}^{T} }
+             {
+               \FlaOneByTwoSingleLine { D_1 = ( B_1 - B_{2}U_{22}^{-T}U_{12} ) U_{11}^{-1} }
+                                      { B_{2}U_{22}^{-T} } } \\
+\]
+Thus we conclude that
+an algorithm that maintains the condition in (\ref{eqn:utrsm2}) is
+given in Fig.~\ref{fig:utrsm:collazy_alg}~(left).
+Notice that the algorithm overwrites matrix $ B $ with the
+result $ B U^{-T} $.
+\begin{figure}[htbp]
+\begin{center}
+\begin{tabular}{p{3.1in} | p{3.1in}}
+\begin{minipage}{3.1in}
+\begin{algorithm}{
+\label{alg:unblocked_collazy_utrsm}
+\begin{minipage}[t]{2in}
+$ B \leftarrow B U^{-T} $ \\(unblocked col.-lazy w.r.t. $ U $)
+\end{minipage}
+}
+\\[0.2in]
+\begin{minipage}{4in}
+\begin{FlameAlgNarrow}
+\FlaPartition{ $
+B \rightarrow
+     \FlaOneByTwo{ B_{L} } { B_{R} } 
+$ }
+{
+  \FlaWhere{$ B_{R} $ has $ 0 $ columns}
+} \\
+\FlaPartition { $ 
+U \rightarrow 
+     \FlaTwoByTwo{ U_{TL} }{ U_{TR} }
+                 {   0    }{ U_{BR} } 
+$ }
+{
+  \FlaWhere{ $ U_{BR} $ is $ 0 \times 0 $ }
+}
+\\
+\FlaDoUntil{$ U_{TL} $ is $ 0 \times 0 $} \\
+  \\
+  \FlaRepartition{ $ 
+  \FlaOneByTwo{ B_{L} } { B_{R} } \rightarrow
+  \FlaOneByThreeL{ B_{0} }
+                 { b_{1} }
+                 { B_{2} }
+  $ }
+  {
+    \FlaWhere{$ b_{1} $ is a column}
+  } \\
+  \FlaRepartition{ $ 
+      \FlaTwoByTwo{ U_{TL} }{ U_{TR} }
+                  {    0   }{ U_{BR} } \rightarrow
+      \FlaThreeByThreeTL{ U_{00} } { u_{01}        } { U_{02}     }
+                        {   0    } { \upsilon_{11} } { u_{12}^{T} }
+                        {   0    } {      0        } { U_{22}     }  
+  $ }
+  {
+    \FlaWhere{$ \upsilon_{11} $ is a scalar}
+  } \\
+  \FlaStartCompute \\  % ******************
+
+  $ B_0 \leftarrow B_0 -  b_{1} u_{01}^T $ \\
+  $ b_{1} \leftarrow b_{1} \upsilon_{11}^{-1} $ \\
+  
+  \FlaEndCompute\\     % ******************
+  \FlaContinue{ $ 
+      \FlaTwoByTwo{ U_{TL} }{ U_{TR} }
+                  {    0   }{ U_{BR} } \leftarrow
+      \FlaThreeByThreeBR{ U_{00} } { u_{01}        } { U_{02}     }
+                        {   0    } { \upsilon_{11} } { u_{12}^{T} }
+                        {   0    } {      0        } { U_{22}     }  
+  $ } \\ 
+  \FlaContinue{ $ 
+  \FlaOneByTwo{ B_{L} }
+              { B_{R} } \leftarrow
+  \FlaOneByThreeR{B_{0}} {b_{1}} {B_{2}}
+  $ } \\           % Note: it is important to 
+\FlaEndDo \\       % have \\ before \FlaEndDo
+\end{FlameAlgNarrow}
+\end{minipage}
+\end{algorithm}
+\end{minipage}
+&
+\begin{minipage}{3.1in}
+\begin{algorithm}{
+\label{alg:blocked_collazy_utrsm}
+\begin{minipage}[t]{2in}
+$ B \leftarrow BU^{-T} $ \\(blocked col.-lazy w.r.t. $ U $)
+\end{minipage}
+}
+\\[0.2in]
+\begin{minipage}{4in}
+\begin{FlameAlgNarrow}
+\FlaPartition{ $
+B \rightarrow
+     \FlaOneByTwo{ B_{L} } { B_{R} } 
+$ }
+{
+  \FlaWhere{$ B_{R} $ has $ 0 $ columns}
+} \\
+\FlaPartition { $ 
+U \rightarrow 
+     \FlaTwoByTwo{ U_{TL} }{ U_{TR} }
+                 {   0    }{ U_{BR} } 
+$ }
+{
+  \FlaWhere{ $ U_{BR} $ is $ 0 \times 0 $ }
+}
+\\
+\FlaDoUntil{$ U_{TL} $ is $ 0 \times 0 $} \\
+   {\bf determine block size} $ b $ \\
+  \FlaRepartition{ $ 
+  \FlaOneByTwo{ B_{L} } { B_{R} } \rightarrow
+  \FlaOneByThreeL{ B_{0} } { B_{1} } { B_{2} }
+  $ }
+  {
+    \FlaWhere{$ B_{1} $ has $ b $ columns}
+  } \\
+  \FlaRepartition{ $ 
+      \FlaTwoByTwo{ U_{TL} }{ U_{TR} }
+                  {    0   }{ U_{BR} } \rightarrow
+      \FlaThreeByThreeTL{ U_{00} } { U_{01} } { U_{02} }
+                        {   0    } { U_{11} } { U_{12} }
+                        {   0    } {   0    } { U_{22} }  
+  $ }
+  {
+    \FlaWhere{$ U_{11} $ is $ b \times b $}
+  } \\
+  \FlaStartCompute \\  % ******************
+
+  $ B_{0} \leftarrow B_{0} - B_{1}U_{01}^{T} $ \\
+  $ B_{1} \leftarrow B_{1}U_{11}^{-1} $ \\
+
+  \FlaEndCompute\\     % ******************
+  \FlaContinue{ $ 
+      \FlaTwoByTwo{ U_{TL} }{ U_{TR} }
+                  {    0   }{ U_{BR} } \leftarrow
+      \FlaThreeByThreeBR{ U_{00} } { U_{01} } { U_{02} }
+                        {   0    } { U_{11} } { U_{12} }
+                        {   0    } {   0    } { U_{22} }  
+  $ } \\ 
+  \FlaContinue{ $ 
+  \FlaOneByTwo{ B_{L} }
+              { B_{R} } \leftarrow
+  \FlaOneByThreeR{ B_{0} } { B_{1} } { B_{2} }
+  $ } \\           % Note: it is important to 
+\FlaEndDo \\       % have \\ before \FlaEndDo
+\end{FlameAlgNarrow}
+\end{minipage}
+\end{algorithm}
+\end{minipage}
+\end{tabular}
+\end{center}
+\caption{Unblocked (left) and blocked (right) column-lazy triangular solution with
+multiple right-hand-sides
+algorithms.}
+\label{fig:utrsm:collazy_alg}
+\end{figure}
+
+\subsection{Lazy algorithm (relative to $ U $)}
+
+Next, consider the condition that currently 
+\begin{equation}
+\label{eqn:teaml_ltrmm4}
+D \quad \mbox{contains}
+\quad
+\FlaOneByTwo{ B_L }
+            { B_R U_{BR}^{-T} }
+\end{equation}
+Notice that this indicates that only 
+$ U_{BR}^{-T} $ has been used
+to update $ D $, which will call
+a lazy algorithm relative to operand
+$ U $.
+
+Again, this algorithm naturally moves through matrices
+$ D $ and $ B $ in the ``left'' direction.
+
+\subsubsection{Unblocked algorithm}
+
+Repartition
+\[
+  \FlaOneByTwo{ D_{L} }
+              { D_{R} } \rightarrow
+  \FlaOneByThreeL{ D_{0} }
+                 { d_{1} }
+                 { D_{2} }
+\]
+where
+$ d_{1} $ is a column.
+Similarly, we repartition 
+\[ 
+  \FlaOneByTwo{ B_{L} }
+              { B_{R} } \rightarrow
+  \FlaOneByThreeL{ B_{0} }
+                 { b_{1} }
+                 { B_{2} }
+\quad \mbox{and} \quad
+      \FlaTwoByTwo{ U_{TL} }{ U_{TR} }
+                  {   0    }{ U_{BR} } \rightarrow
+      \FlaThreeByThreeTL{ U_{00} } { u_{01}        } { U_{02}     }
+                        {   0    } { \upsilon_{11} } { u_{12}^{T} }
+                        {   0    } {    0          } { U_{22}     }  
+\]
+where $ b_{1} $ is a column and $ \upsilon_{11} $ is a scalar.
+
+Again, the double lines have the same meaning as illustrated
+in (\ref{eqn:teaml_ltrmm:meaning}). Considering (\ref{eqn:teaml_ltrmm4}) and these repartitionings,
+$ D $ currently contains
+\begin{eqnarray*}
+\begin{array}{c @{\hspace{1pt}} c @{\hspace{1pt}} c} 
+\FlaOneByTwo{ B_{L} }
+            { B_R U_{TR}^{-T} }
+&=& 
+\FlaOneByThreeL{ B_{0} }
+               { b_{1} }
+	       { B_{2} U_{22}^{-T} } \\      
+\end{array}
+\end{eqnarray*}
+\\
+After moving the double lines ahead, in preparation
+of the next iteration, the partitioning takes on the same
+meaning in (\ref{eqn:teaml_ltrmm4}) and $ D $ must be updated to contain 
+\begin{eqnarray*}
+\begin{array}{c @{\hspace{1pt}} c @{\hspace{1pt}} c @{\hspace{1pt}} c @{\hspace{1pt}} c}
+&=& 
+\FlaOneByTwo { 
+	       B_{0} }
+             { 
+               \FlaOneByTwoSingleLine { b_{1} } { B_{2} }
+	       \FlaTwoByTwoSingleLine { \upsilon_{11} } { u_{12}^{T} }
+                                      {    0          } { U_{22}     }^{-T}
+              } \\
+&=& 
+\FlaOneByTwo { 
+	       B_{0} }
+             { 
+               \FlaOneByTwoSingleLine { b_{1} } { B_{2} }
+	       \FlaTwoByTwoSingleLine { \upsilon_{11} } {     0      }
+                                      { u_{12}        } { U_{22}^{T} }^{-1}
+              } \\
+&=& 
+\FlaOneByTwo { 
+	       B_{0} }
+             { 
+               \FlaOneByTwoSingleLine { b_{1} } { B_{2} }
+	       \FlaTwoByTwoSingleLine { 1/\upsilon_{11}                     } {     0      }
+                                      { -U_{22}^{-T} u_{12} / \upsilon_{11} } { U_{22}^{-T}}
+              } \\
+&=&
+\FlaOneByTwo { 
+	       B_{0} }
+             { 
+               \FlaOneByTwoSingleLine { b_{1} / \upsilon_{11} - B_{2} U_{22}^{-T} u_{12} / \upsilon_{11} } { B_{2} U_{22}^{-T} }
+              } \\
+&=&
+\FlaOneByTwo { 
+	       B_{0} }
+             { 
+               \FlaOneByTwoSingleLine { ( b_{1} - B_{2} U_{22}^{-T} u_{12} ) / \upsilon_{11} } { B_{2} U_{22}^{-T} }
+              } \\
+&=&
+\FlaOneByTwo { 
+	       B_{0} }
+             { 
+               \FlaOneByTwoSingleLine { ( b_{1} - D_{2} u_{12} ) / \upsilon_{11} } { B_{2} U_{22}^{-T} }
+              } \\
+\end{array}
+\end{eqnarray*}
+Thus, the contents of $ D $ must be updated like:
+\[
+\FlaOneByTwo{ \FlaOneByTwoSingleLine{ B_{0} }
+                                    { b_{1} } }
+	    { B_{2} U_{22}^{-T}  } \\ 
+\rightarrow
+\FlaOneByTwo { 
+	       B_{0} }
+             { 
+               \FlaOneByTwoSingleLine { ( b_{1} - D_{2} u_{12} ) / \upsilon_{11} } { B_{2} U_{22}^{-T} }
+              } \\
+\]
+Thus we conclude that
+an algorithm that maintains the condition in (\ref{eqn:teaml_ltrmm4}) is
+given in Fig.~\ref{fig:utrsm:lazy_alg}~(left).
+Notice that the algorithm overwrites matrix $ B $ with the
+result $ B U^{-T} $.
+
+\subsubsection{Blocked algorithm}
+
+Repartition
+\[
+  \FlaOneByTwo{ D_{L} }
+              { D_{R} } \rightarrow
+  \FlaOneByThreeL{ D_{0} }
+                 { D_{1} }
+                 { D_{2} }
+\]
+where
+$ D_{1} $ is a block of $ b $ columns.
+Similarly, we repartition 
+\[ 
+  \FlaOneByTwo{ B_{L} }
+              { B_{R} } \rightarrow
+  \FlaOneByThreeL{ B_{0} }
+                 { B_{1} }
+                 { B_{2} }
+\quad \mbox{and} \quad
+      \FlaTwoByTwo{ U_{TL} }{ U_{TR} }
+                  {   0    }{ U_{BR} } \rightarrow
+      \FlaThreeByThreeTL{ U_{00} } { U_{01} }  { U_{02} }
+                        {   0    } { U_{11} }  { U_{12} }
+                        {   0    } {   0    }  { U_{22} }  
+\]
+where $ B_{1} $ is a block of $ b $ columns and 
+$ U_{11} $ is a $ b \times b $.
+
+Again, the double lines have the same meaning as illustrated
+in (\ref{eqn:teaml_ltrmm:meaning}). Considering (\ref{eqn:teaml_ltrmm4}) and these repartitionings,
+$ D $ currently contains
+\begin{eqnarray*}
+\begin{array}{c @{\hspace{1pt}} c @{\hspace{1pt}} c} 
+\FlaOneByTwo{ B_{L} }
+            { B_R U_{TR}^{-T} }
+&=& 
+\FlaOneByThreeL{ B_{0} }
+               { B_{1} }
+	       { B_{2} U_{22}^{-T} } \\      
+\end{array}
+\end{eqnarray*}
+\\
+After moving the double lines ahead, in preparation
+of the next iteration, the partitioning takes on the same
+meaning in (\ref{eqn:teaml_ltrmm4}) and $ D $ must be updated to contain 
+\begin{eqnarray*}
+\begin{array}{c @{\hspace{1pt}} c @{\hspace{1pt}} c @{\hspace{1pt}} c @{\hspace{1pt}} c}
+&=& 
+\FlaOneByTwo { 
+	       B_{0} }
+             { 
+               \FlaOneByTwoSingleLine { B_{1}  } { B_{2}  }
+	       \FlaTwoByTwoSingleLine { U_{11} } { U_{12} }
+                                      {    0   } { U_{22} }^{-T}
+              } \\
+&=& 
+\FlaOneByTwo { 
+	       B_{0} }
+             { 
+               \FlaOneByTwoSingleLine { B_{1}  } { B_{2}  }
+	       \FlaTwoByTwoSingleLine { U_{11}^{T} } {     0      }
+                                      { U_{12}^{T} } { U_{22}^{T} }^{-1}
+              } \\
+&=& 
+\FlaOneByTwo { 
+	       B_{0} }
+             { 
+               \FlaOneByTwoSingleLine { B_{1}       } { B_{2} }
+	       \FlaTwoByTwoSingleLine { U_{11}^{-T} } {     0      }
+                                      { -U_{22}^{-T} U_{12}^{T} U_{11}^{-T} } { U_{22}^{-T}}
+              } \\
+&=&
+\FlaOneByTwo { 
+	       B_{0} }
+             { 
+               \FlaOneByTwoSingleLine { B_{1} U_{11}^{-T} - B_{2} U_{22}^{-T} U_{12}^{T} U_{11}^{-T} } { B_{2} U_{22}^{-T} }
+              } \\
+&=&
+\FlaOneByTwo { 
+	       B_{0} }
+             { 
+               \FlaOneByTwoSingleLine { ( B_{1} - B_{2} U_{22}^{-T} U_{12}^{T} ) U_{11}^{-T} } { B_{2} U_{22}^{-T} }
+              } \\
+&=&
+\FlaOneByTwo { 
+	       B_{0} }
+             { 
+               \FlaOneByTwoSingleLine { ( B_{1} - D_{2} U_{12}^{T} ) U_{11}^{-T} } { B_{2} U_{22}^{-T} }
+              } \\
+\end{array}
+\end{eqnarray*}
+Thus, the contents of $ D $ must be updated like:
+\[
+\FlaOneByTwo{ \FlaOneByTwoSingleLine{ B_{0} }
+                                    { B_{1} } }
+	    { B_{2} U_{22}^{-T}  } \\ 
+\rightarrow
+\FlaOneByTwo { 
+	       B_{0} }
+             { 
+               \FlaOneByTwoSingleLine { ( B_{1} - D_{2} U_{12}^{T} ) U_{11}^{-T} } { B_{2} U_{22}^{-T} }
+              } \\
+\]
+Thus we conclude that
+an algorithm that maintains the condition in (\ref{eqn:teaml_ltrmm4}) is
+given in Fig.~\ref{fig:utrsm:lazy_alg}~(left).
+Notice that the algorithm overwrites matrix $ B $ with the
+result $ B U^{-T} $.
+
+\begin{figure}[htbp]
+\begin{center}
+\begin{tabular}{p{3.1in} | p{3.1in}}
+\begin{minipage}{3.1in}
+\begin{algorithm}{
+\label{alg:unblocked_lazy_utrsm}
+\begin{minipage}[t]{2in}
+$ B \leftarrow B U^{-T} $ \\(unblocked lazy w.r.t. $ U $)
+\end{minipage}
+}
+\\[0.2in]
+\begin{minipage}{4in}
+\begin{FlameAlgNarrow}
+\FlaPartition{ $
+B \rightarrow
+     \FlaOneByTwo{ B_{L} } { B_{R} } 
+$ }
+{
+  \FlaWhere{$ B_{R} $ has $ 0 $ columns}
+} \\
+\FlaPartition { $ 
+U \rightarrow 
+     \FlaTwoByTwo{ U_{TL} }{ U_{TR} }
+                 {   0    }{ U_{BR} } 
+$ }
+{
+  \FlaWhere{ $ U_{BR} $ is $ 0 \times 0 $ }
+}
+\\
+\FlaDoUntil{$ B_{L} $ has $ 0 $ columns} \\
+  \\
+  \FlaRepartition{ $ 
+  \FlaOneByTwo{ B_{L} } { B_{R} } \rightarrow
+  \FlaOneByThreeL{ B_{0} }
+                 { b_{1} }
+                 { B_{2} }
+  $ }
+  {
+    \FlaWhere{$ b_{1} $ is a column}
+  } \\
+  \FlaRepartition{ $ 
+      \FlaTwoByTwo{ U_{TL} }{ U_{TR} }
+                  {    0   }{ U_{BR} } \rightarrow
+      \FlaThreeByThreeTL{ U_{00} } { u_{01} }       { U_{02} }
+                        {   0    } { \upsilon_{11}} { u_{12}^{T} }
+                        {   0    } {    0   }       { U_{22} }  
+  $ }
+  {
+    \FlaWhere{$ \upsilon_{11} $ is a scalar}
+  } \\
+  \FlaStartCompute \\  % ******************
+
+  $ b_{1} \leftarrow  ( b_{1} - B_{2} u_{12} ) \upsilon_{11}^{-1}  $ \\
+
+  \FlaEndCompute\\     % ******************
+  \FlaContinue{ $ 
+      \FlaTwoByTwo{ U_{TL} }{ U_{TR} }
+                  {    0   }{ U_{BR} } \leftarrow
+      \FlaThreeByThreeBR{ U_{00} } { u_{01} }       { U_{02} }
+                        {   0    } { \upsilon_{11}} { u_{12}^{T} }
+                        {   0    } {    0   }       { U_{22} }  
+  $ } \\ 
+  \FlaContinue{ $ 
+  \FlaOneByTwo{ B_{L} }
+              { B_{R} } \leftarrow
+  \FlaOneByThreeR{B_{0}} {b_{1}} {B_{2}}
+  $ } \\           % Note: it is important to 
+\FlaEndDo \\       % have \\ before \FlaEndDo
+\end{FlameAlgNarrow}
+\end{minipage}
+\end{algorithm}
+\end{minipage}
+&
+\begin{minipage}{3.1in}
+\begin{algorithm}{
+\label{alg:blocked_lazy_utrsm}
+\begin{minipage}[t]{2in}
+$ B \leftarrow BU^{-T} $ \\(blocked lazy w.r.t. $ U $)
+\end{minipage}
+}
+\\[0.2in]
+\begin{minipage}{4in}
+\begin{FlameAlgNarrow}
+\FlaPartition{ $
+B \rightarrow
+     \FlaOneByTwo{ B_{L} } { B_{R} } 
+$ }
+{
+  \FlaWhere{$ B_{L} $ has $ 0 $ columns}
+} \\
+\FlaPartition { $ 
+U \rightarrow 
+     \FlaTwoByTwo{ U_{TL} } { U_{TR} }
+                 {   0    } { U_{BR} } 
+$ }
+{
+  \FlaWhere{ $ U_{BR} $ is $ 0 \times 0 $ }
+}
+\\
+\FlaDoUntil{$ U_{BR} $ is $ 0 \times 0 $} \\
+   {\bf determine block size} $ b $ \\
+  \FlaRepartition{ $ 
+  \FlaOneByTwo{ B_{L} } { B_{R} } \rightarrow
+  \FlaOneByThreeL{B_{0}} {B_{1}} {B_{2}}
+  $ }
+  {
+    \FlaWhere{$ B_{1} $ has $ b $ columns}
+  } \\
+  \FlaRepartition{ $ 
+      \FlaTwoByTwo{ U_{TL} } { U_{TR} }
+                  {    0   } { U_{BR} } \rightarrow
+      \FlaThreeByThreeTL{ U_{00} } { U_{01} } { U_{02} }
+                        {   0    } { U_{11} } { U_{12} }
+                        {   0    } {   0    } { U_{22} }  
+  $ }
+  {
+    \FlaWhere{$ U_{11} $ is $ b \times b $}
+  } \\
+  \FlaStartCompute \\  % ******************
+
+  $ B_{1} \leftarrow ( B_{1} - B_{2} U_{12}^{T} ) U_{11}^{-T} $ \\
+
+  \FlaEndCompute\\     % ******************
+  \FlaContinue{ $ 
+      \FlaTwoByTwo{ U_{TL} }{ U_{TR} }
+                  {    0   }{ U_{BR} } \leftarrow
+      \FlaThreeByThreeBR{ U_{00} } { U_{01} } { U_{02} }
+                        {   0    } { U_{11} } { U_{12} }
+                        {   0    } {   0    } { U_{22} }  
+  $ } \\ 
+  \FlaContinue{ $ 
+  \FlaOneByTwo{ B_{L} }
+              { B_{R} } \leftarrow
+  \FlaOneByThreeR{B_{0}} {B_{1}} {B_{2}}
+  $ } \\           % Note: it is important to 
+\FlaEndDo \\       % have \\ before \FlaEndDo
+\end{FlameAlgNarrow}
+\end{minipage}
+\end{algorithm}
+\end{minipage}
+\end{tabular}
+\end{center}
+\caption{Unblocked (left) and blocked (right) lazy triangular solution with
+multiple right-hand-sides
+algorithms.}
+\label{fig:utrsm:lazy_alg}
+\end{figure}
+
+\section{Implementation}
+
+These codes, and related test routines, can be found at
+\begin{center}
+\tt
+http://www.cs.utexas.edu/users/flame/materials/trsm\_rut/
+\end{center}
+
+\begin{figure}[htbp]
+\footnotesize
+\begin{quote}
+\listinginput{1}{materials/trsm_rut/lazy-collazy/Trsm_right_upper_trans_unb.c}
+\end{quote}
+\caption{Unblocked lazy and column-lazy (w.r.t. $ U $) triangular 
+solve with multiple right-hand-sides using FLAME.}
+\label{fig:trsm_rut_unb}
+\end{figure}
+
+\begin{figure}[htbp]
+\footnotesize
+\begin{quote}
+\listinginput{1}{materials/trsm_rut/lazy-collazy/Trsm_right_upper_trans_blk.c}
+\end{quote}
+\caption{Blocked lazy and column-lazy (w.r.t. $ U $) triangular 
+solve with multiple right-hand-sides using FLAME.}
+\label{fig:trsm_rut_blk}
+\end{figure}
+
+\section{Performance}
+
+\begin{figure}[htbp]
+\begin{center}
+\begin{tabular}{c | c}
+Column-lazy & Lazy \\ \hline
+& \\
+%\psfig{figure=trsm_rut/graphs/trsm_rut_collazy_wrt_U_32.eps,width=3.0in,height=3.0in} &
+%\psfig{figure=trsm_rut/graphs/trsm_rut_lazy_wrt_U_32.eps,width=3.0in,height=3.0in}
+\psfig{figure=materials/trsm_rut/lazy-collazy/trsm_rut_collazy_wrt_U_32.eps,width=3.0in,height=3.0in} &
+\psfig{figure=materials/trsm_rut/lazy-collazy/trsm_rut_lazy_wrt_U_32.eps,width=3.0in,height=3.0in}
+\\ \hline
+& \\
+%\psfig{figure=trsm_rut/graphs/trsm_rut_collazy_wrt_U_128.eps,width=3.0in,height=3.0in} &
+%\psfig{figure=trsm_rut/graphs/trsm_rut_lazy_wrt_U_128.eps,width=3.0in,height=3.0in}
+\psfig{figure=materials/trsm_rut/lazy-collazy/trsm_rut_collazy_wrt_U_128.eps,width=3.0in,height=3.0in} &
+\psfig{figure=materials/trsm_rut/lazy-collazy/trsm_rut_lazy_wrt_U_128.eps,width=3.0in,height=3.0in}
+\end{tabular}
+\end{center}
+\caption{Performance of the column-lazy (left) and lazy (right) (w.r.t. $ U $) 
+triangular solve with multiple right-hand-sides
+for a block size of $ 32 $ (top) and
+$ 128 $ (bottom).
+For these experiments, the ITXGEMM matrix-matrix multiplication
+kernel was used.}
+\label{perf:trsm_rut_ITXGEMM}
+\end{figure}
+\index{op}{triangular solve!multiple RHSs!$ B \leftarrow B U^{-T} $|)}%

@@ -1,0 +1,108 @@
+\begin{figure}
+\begin{center}
+\footnotesize
+% \begin{sideways}
+{
+\setlength{\tabcolsep}{4pt}
+\begin{tabular}{| c | p{2.5in} | c | } \hline
+$ P_X: $
+
+$ \FlaTwoByTwo{ C_{TL} } { C_{TR} }
+              { C_{BL} } { C_{BR} } =  $ & Comment &
+\footnotesize Feasible? \\ \hline \hline
+\footnotesize
+$
+\FlaTwoByTwo{ \hat{C}_{TL} }  { \hat{C}_{TR} }
+            { \undetermined } { \hat{C}_{BR} }
+$ 
+&
+&
+NO
+\\ \hline
+%
+%
+\footnotesize
+$
+\FlaTwoByTwo{ A_{T} A_{T}^T + \hat{C}_{TL} }  { A_{T} A_{B}^T + \hat{C}_{TR} }
+            { \undetermined }                 { A_{B} A_{B}^T + \hat{C}_{BR} }
+$ 
+& 
+NO
+\\ \hline
+%
+%
+\footnotesize
+$
+\FlaTwoByTwo{ A_{T} A_{T}^T + \hat{C}_{TL} }  { \hat{C}_{TR} }
+            { \undetermined }                 { \hat{C}_{BR} }
+$ 
+& 
+YES
+\\ \hline
+%
+%
+\footnotesize
+$
+\FlaTwoByTwo{ \hat{C}_{TL} }  { A_{T} A_{B}^T + \hat{C}_{TR} } 
+            { \undetermined } { \hat{C}_{BR} }
+$ 
+&
+NO
+\\ \hline
+%
+%
+\footnotesize
+$
+\FlaTwoByTwo{ \hat{C}_{TL} }   { \hat{C}_{TR} }
+            { \undetermined }  { A_{B} A_{B}^T + \hat{C}_{BR} }
+$ 
+&
+Loop-invariant 1
+&
+YES
+\\ \hline
+%
+%
+\footnotesize
+$
+\FlaTwoByTwo{ \hat{C}_{TL} } { A_{T} A_{B}^T + \hat{C}_{TR} }
+            { \undetermined} { A_{B} A_{B}^T + \hat{C}_{BR} }
+$ 
+&
+YES
+\\ \hline
+%
+%
+\footnotesize
+$
+\FlaTwoByTwo{ A_{T} A_{T}^T + \hat{C}_{TL} } { \hat{C}_{TR} }
+            { \undetermined }                { A_{B} A_{B}^T + \hat{C}_{BR} }
+$ 
+&
+YES
+\\ \hline
+%
+%
+\footnotesize
+$
+\FlaTwoByTwo{ A_{T} A_{T}^T + \hat{C}_{TL} } { A_{T} A_{B}^T + \hat{C}_{TR} }
+            { \undetermined }                { \hat{C}_{BR} }
+$ 
+&
+Loop-invariant 2.
+&
+YES
+\\ \hline
+%\\ \hline
+%
+%
+\end{tabular}
+}
+% \end{sideways}
+\end{center}
+\caption{Possible loop-invariants when partitioning
+$ C $ into quadrants.
+Here $ P_X $ is the most prominent part of the loop-invariant
+$ \PInv $.}
+\label{fig:USYRK_UNN_example}
+\end{figure}

@@ -1,0 +1,131 @@
+%
+% ExampleBox draws a box around an example in the FLAME
+% document
+%
+
+\newcommand{\ExampleBox}[2]{
+\begin{flushright}
+\fbox{
+\begin{minipage}{5.5in}
+{\bf Example #1}
+#2
+\end{minipage}
+}
+\end{flushright}
+}
+
+\newcommand{\NoteBox}[1]{
+\begin{flushright}
+\fbox{
+\begin{minipage}{6.0in}
+{\bf Note:}
+#1
+\end{minipage}
+}
+\end{flushright}
+}
+
+\newcommand{\ChapterAuthor}[1]{
+{
+\vspace{-0.2in}
+\large 
+by \\[0.1in]
+\bf
+#1
+}
+\vspace{0.5in}
+}
+
+\newcommand{\diagram}[1]{
+}
+
+\newcommand{\SummaryBox}[3]{
+\index{rout}{{#2}}
+\begin{tabular}{| p{2.0in} @{} | @{\hspace{1pt}} p{4.3in} | } \hline
+\begin{minipage}{1.8in}
+#1 
+\end{minipage}
+& 
+\begin{minipage}{4.3in}
+\begin{description}
+\item
+{\tt #2 #3}
+\end{description}
+\end{minipage}
+\\ \hline
+\end{tabular}
+}
+
+\newcommand{\un}{\_}%\hspace{-5pt}}
+
+\newcommand{\parameter}[2]{
+\begin{minipage}[t]{1.5in}
+#1
+\end{minipage}
+\begin{minipage}[t]{4.25in}
+#2
+\end{minipage}
+}
+
+\newcommand{\purpose}[1]{
+\vspace{-0.1in}
+{\bf Purpose:} #1
+\vspace{0.05in}
+}
+
+\newenvironment{FlaSpec}{
+\begin{center}
+\begin{tabular}{| p{6.25in} |} \hline
+\vspace{-0.2in}
+}
+{
+\\ \hline
+\end{tabular}
+\end{center}
+}
+
+\newcommand{\conj}[1]{{\tt conj}({#1})}
+
+% \newcommand{\status}[1]{\addtocontents{toc}{{\\ \bf Status: #1}}}
+
+\newcommand{\status}[1]{}
+
+\newcounter{stepnumber}
+% \addtocounter{stepnumber}{1}%
+
+\newcommand{\step}{
+\refstepcounter{stepnumber}%
+\noindent
+{\bf Step \thestepnumber:}
+}
+
+\newenvironment{codeexample}
+{
+\begin{quote}
+}
+{
+\end{quote}
+}
+
+\newcommand{\becomes}{:=}
+
+\newcommand{\equals}{=}
+
+\newcommand{\implies}{\Rightarrow}
+
+\newcommand{\longggarrow}{
+\setlength{\unitlength}{0.5in}
+\begin{picture}(5,1)
+\put(5,0){\vector(-1,0){5}}
+\end{picture}
+}
+
+\newcommand{\PPre}{P_{\rm pre}}
+\newcommand{\PPost}{P_{\rm post}}
+\newcommand{\PInv}{P_{\rm inv}}
+
+\newcommand{\QBefore}{Q_{\rm before}}
+\newcommand{\QAfter}{Q_{\rm after}}
+
+\newcommand{\Qbefore}{Q_{\rm before}}
+\newcommand{\Qafter}{Q_{\rm after}}

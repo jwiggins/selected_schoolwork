@@ -1,0 +1,97 @@
+\documentclass[leqno,10pt]{report}   %You must set up
+
+\usepackage{ifthen}
+
+\usepackage{psfig}
+\usepackage{color}
+\usepackage{moreverb}
+\usepackage{latexsym}
+\usepackage{rotating}
+\usepackage{makeidx}  % allows for indexgeneration
+% \usepackage{draftcopy}
+\usepackage{multind}
+\usepackage{multicol}
+
+\makeindex{index}
+\makeindex{rout}
+\makeindex{const}
+\makeindex{op}
+\makeindex{author}
+
+\newtheorem{note}{Note}
+\newtheorem{algorithm}{Algorithm}
+\newtheorem{theorem}{Theorem}
+\newtheorem{lemma}{Lemma}
+\newtheorem{corollary}{Corollary}
+\newtheorem{definition}{Definition}
+\newtheorem{exercise}[theorem]{Exercise}
+\newtheorem{example}[theorem]{Example}
+
+\newcommand{\PATH}{/u/rvdg/}
+\newenvironment{proof}{
+\noindent
+{\bf Proof:}
+}
+{
+\hfill
+$ \Box $
+}
+
+% for SIAM, comment out the following lines
+\setlength{\textheight}{9.0in}
+\setlength{\textwidth}{6.5in}
+\setlength{\oddsidemargin}{0in}
+\setlength{\evensidemargin}{0in}
+\setlength{\topmargin}{-.5in}
+
+\newcommand\R{\hbox{\rm I\kern-2pt R}}
+\newcommand\C{{\rm\ \raise0.5pt
+        \hbox{\vrule height6.00pt width0.6pt depth0pt}\kern-3.20pt C}}
+\newcommand{\Rnn}{\R^{n\times n}}                                               
+\newcommand{\Rmn}{\R^{m\times n}}                                               
+\newenvironment{indent0}%
+  {\begin{list}{\ }{}}%
+  {\end{list}}
+
+\newenvironment{indent1}%
+  {\begin{list}{\  \hspace{.05in} }{}}%
+  {\end{list}}
+
+\newenvironment{indent2}%
+  {\begin{list}{\  \hspace{.1in} }{}}%
+  {\end{list}}
+
+\newenvironment{indent3}%
+  {\begin{list}{\  \hspace{.15in} }{}}%
+  {\end{list}}
+
+\input{flatex}
+\input{flamisc}
+
+\newboolean{FORTRAN}
+% \setboolean{FORTRAN}{true}
+\setboolean{FORTRAN}{false}
+
+\newboolean{CLANGUAGE}
+\setboolean{CLANGUAGE}{true}
+% \setboolean{CLANGUAGE}{false}
+
+\begin{document}
+
+\input{frontmatter}
+
+%\input{trmm_lln/trmm_lln} 
+%\input{trsm_rut/trsm_rut} 
+%\input{syrk_unn/syrk_unn}
+\input{sytrrk_uln/sytrrk_uln}
+
+% \printindex{index}{Index}
+% \printindex{author}{Author Index}
+% \printindex{const}{Constant Index}
+% \printindex{rout}{Function Index}
+% \printindex{op}{Operation Index}
+
+\end{document}
+
+
+

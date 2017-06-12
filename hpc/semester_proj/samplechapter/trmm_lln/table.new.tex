@@ -1,0 +1,137 @@
+\begin{figure}
+\begin{center}
+\footnotesize
+% \begin{sideways}
+{
+\setlength{\tabcolsep}{4pt}
+\begin{tabular}{| c | c | c || c | p{1.1in} | c | } \hline
+\multicolumn{3}{| c ||}{Computed?} & $ P_X: $
+& & \\ \cline{1-3}
+
+\footnotesize
+$ L_{TL} B_T $ & 
+\footnotesize
+$ L_{BL} B_T $ & 
+\footnotesize
+$ L_{BR} B_B $ &
+$ \FlaTwoByOne{ B_T}{B_B} =  $ & Comment &
+\footnotesize Feasible? \\ \hline \hline
+NO & NO & NO &
+\footnotesize
+$
+\FlaTwoByOne{ \hat{B}_T }
+            { \hat{B}_B }
+$ 
+&
+Infeasible (Reason 2).
+&
+NO
+\\ \hline
+%
+%
+YES & NO & NO &
+\footnotesize
+$
+\FlaTwoByOne{ L_{TL} \hat{B}_T }
+            { \hat{B}_B }
+$ 
+&
+Infeasible (Reason 1).
+& 
+NO
+\\ \hline
+NO & YES & NO &
+%
+%
+\footnotesize
+$
+\FlaTwoByOne{ \hat{B}_T }
+            { L_{BL} \hat{B}_T  }
+$ 
+&
+Infeasible (Reason 1).
+& 
+NO
+\\ \hline
+%
+%
+YES & YES & NO &
+\footnotesize
+$
+\FlaTwoByOne{ L_{TL} \hat{B}_T }
+            { L_{BL} \hat{B}_T }
+$ 
+&
+Infeasible (Reason 1).
+&
+NO
+\\ \hline
+NO & NO & YES &
+%
+%
+\footnotesize
+$
+\FlaTwoByOne{ \hat{B}_T }
+            { L_{BR} \hat{B}_B }
+$ 
+&
+Loop-invariant 1
+&
+YES
+\\ \hline
+YES & NO & YES &
+%
+%
+\footnotesize
+$
+\FlaTwoByOne{ L_{TL} \hat{B}_T }
+            { L_{BR} \hat{B}_B }
+$ 
+&
+Infeasible (Reason 1).
+&
+NO
+\\ \hline
+%
+%
+NO & YES & YES &
+\footnotesize
+$
+\FlaTwoByOne{ \hat{B}_T }
+            { L_{BL} \hat{B}_T  + L_{BR} \hat{B}_B }
+$ 
+&
+Loop-invariant 2
+&
+YES
+\\ \hline
+YES & YES & YES &
+%
+%
+\footnotesize
+$
+\FlaTwoByOne{ L_{TL} \hat{B}_T }
+            { L_{BL} \hat{B}_T  + L_{BR} \hat{B}_B }
+$ 
+&
+Infeasible (Reason 3).
+&
+NO
+\\ \hline
+%\\ \hline
+%
+%
+\end{tabular}
+}
+% \end{sideways}
+\end{center}
+\caption{Possible loop-invariants when partitioning
+$ L $ into quadrants.
+Here $ P_X $ is the most prominent part of the loop-invariant
+$ \PInv $.
+The reasons for declaring the loop-invariant infeasible
+refer to the reasons given on page 11 of the handout.
+The reason for rejecting the loop-invariant may not be
+the only reason for doing so.}
+\label{fig:LTRMM_LLN_example}
+\end{figure}

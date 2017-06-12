@@ -1,0 +1,397 @@
+\documentclass{article}
+
+\usepackage{psfig}
+\usepackage{moreverb}
+\usepackage{latexsym}
+\usepackage{rotating}
+\usepackage{makeidx}  % allows for indexgeneration
+
+\input{flatex}
+\input{flamisc}
+
+\newtheorem{theorem}{Theorem}[section]
+\newtheorem{conjecture}[theorem]{Conjecture}
+\newtheorem{corollary}[theorem]{Corollary}
+\newtheorem{proposition}[theorem]{Proposition}
+\newtheorem{lemma}[theorem]{Lemma}
+\newtheorem{definition}[theorem]{Definition}
+\newtheorem{remark}[theorem]{Remark}
+\newtheorem{exercise}[theorem]{Exercise}
+\newtheorem{example}[theorem]{Example}
+\newtheorem{note}{Note}
+\newtheorem{algorithm}{Algorithm}
+
+% \newcommand{\PPre}{P_{\rm pre}}
+% \newcommand{\PPost}{P_{\rm post}}
+% \newcommand{\PInv}{P_{\rm inv}}
+
+\title{
+A Worksheet for Deriving
+Dense Linear Algebra Algorithms
+}
+            
+\author{
+Your names here! \\
+The University of Texas at Austin
+}
+
+\begin{document}
+            
+\maketitle
+
+\begin{abstract} 
+Abstract here.
+\end{abstract}
+            
+
+\resetsteps
+
+\begin{figure}[tbp]
+\begin{center}
+\worksheet
+\end{center}
+\caption{Worksheet for deriving linear algebra algorithms}
+\end{figure}
+
+\renewcommand{\operation}{B \becomes L^{-1} B}
+
+
+
+\renewcommand{\precondition}{B = \hat{B} \wedge \cdots }
+
+
+\renewcommand{\postcondition}{{ B = L^{-1} \hat{B} }}
+
+
+\renewcommand{\invariant}{ 
+\FlaTwoByOne{ B_T }
+            { B_B } 
+= 
+\FlaTwoByOne{ L_{TL}^{-1} \hat{B}_T }
+            { \hat{B}_B } 
+}
+
+
+\renewcommand{\guard}{ \neg \SameSize( L_{TL}, L ) }
+
+
+\renewcommand{\partitionings}{
+$
+L \rightarrow
+\FlaTwoByTwo{ L_{TL} } { 0 }
+              { L_{BL} } { L_{BR}   }
+$,
+$
+B \rightarrow 
+\FlaTwoByOne{ B_T }
+            { B_B }
+$ and
+$
+\hat{B} \rightarrow 
+\FlaTwoByOne{ \hat{B}_T }
+            { \hat{B}_B }
+$
+}
+
+
+\renewcommand{\partitionsizes}{$ L_{TL} $ is $ 0 \times 0 $, and ... }
+
+
+
+
+\renewcommand{\repartitionings}{ 
+\normalsize
+$
+\FlaTwoByTwo{ L_{TL} } { 0 }
+              { L_{BL} } { L_{BR}   } \rightarrow
+\FlaThreeByThreeBR{ L_{00} }{ 0 }{ 0 }
+              { l_{10}^T }{ \lambda_{11} }{ 0 }
+              { L_{20} }{ l_{21} }{ L_{22} }
+$,
+$
+\FlaTwoByOne{ B_T }
+            { B_B }
+\rightarrow
+\FlaThreeByOneB{ B_0 }
+               { b_1^T }
+               { B_2 }
+$, and \\
+$
+\FlaTwoByOne{ \hat{B}_T }
+            { \hat{B}_B }
+\rightarrow
+\FlaThreeByOneB{ \hat{B}_0 }
+               { \hat{b}_1^T }
+               { \hat{B}_2 }
+$
+}
+
+
+
+
+\renewcommand{\repartitionsizes}{
+$ b_1^T $ and $ \hat{b}_1^T $ are rows and $ \lambda_{11} $ is a scalar}
+
+
+
+
+\renewcommand{\moveboundaries}{ 
+\normalsize
+$
+\FlaTwoByTwo{ L_{TL} } { 0 }
+              { L_{BL} } { L_{BR}   } \leftarrow
+\FlaThreeByThreeTL{ L_{00} }{ 0 }{ 0 }
+              { l_{10}^T }{ \lambda_{11} }{ 0 }
+              { L_{20} }{ l_{21} }{ L_{22} }
+$,
+$
+\FlaTwoByOne{ B_T }
+            { B_B }
+\leftarrow
+\FlaThreeByOneT{ B_0 }
+               { b_1^T }
+               { B_2 }
+$, and \\
+$
+\FlaTwoByOne{ \hat{B}_T }
+            { \hat{B}_B }
+\leftarrow
+\FlaThreeByOneT{ \hat{B}_0 }
+               { \hat{b}_1^T }
+               { \hat{B}_2 }
+$
+}
+
+
+
+
+\renewcommand{\beforeupdate}{
+\FlaThreeByOneB{ B_0 }
+              { b_1^T }
+              { B_2 }
+=
+\FlaThreeByOneB{ L_{00}^{-1} \hat{B}_0 }
+              { \hat{b}_1^T }
+              { \hat{B}_2 }
+}
+
+
+
+
+\renewcommand{\afterupdate}{
+\FlaThreeByOneB{ B_0 }
+              { b_1^T }
+              { B_2 }
+=
+\FlaThreeByOneB{ L_{00}^{-1} \hat{B}_0 }
+              { ( \hat{b}_1^T - l_{10}^T ( L_{00}^{-1} \hat{B}_0 ) ) / \lambda_{11} }
+              { \hat{B}_2 }
+}
+
+
+
+
+\renewcommand{\update}{
+$
+\begin{array}{l}
+b_1^T \becomes ( b_1^T - l_{10}^T B_0 ) / \lambda_{11} 
+\end{array}
+$
+}
+
+
+\begin{figure}[tbp]
+\begin{center}
+\worksheet
+\end{center}
+\caption{Worksheet for deriving algorithm for $ B \becomes L^{-1} B $.}
+\end{figure}
+
+\renewcommand{\partitionings}{
+$
+L \rightarrow
+\FlaTwoByTwo{ L_{TL} } { 0 }
+              { L_{BL} } { L_{BR}   }
+$ and
+$
+B \rightarrow 
+\FlaTwoByOne{ B_T }
+            { B_B }
+$
+}
+
+
+\renewcommand{\partitionsizes}{$ L_{TL} $ is $ 0 \times 0 $, and ... }
+
+
+
+
+\renewcommand{\repartitionings}{ 
+\normalsize
+$
+\FlaTwoByTwo{ L_{TL} } { 0 }
+              { L_{BL} } { L_{BR}   } \rightarrow
+\FlaThreeByThreeBR{ L_{00} }{ 0 }{ 0 }
+              { l_{10}^T }{ \lambda_{11} }{ 0 }
+              { L_{20} }{ l_{21} }{ L_{22} }
+$ and
+$
+\FlaTwoByOne{ B_T }
+            { B_B }
+\rightarrow
+\FlaThreeByOneB{ B_0 }
+               { b_1^T }
+               { B_2 }
+$
+}
+
+
+
+
+\renewcommand{\repartitionsizes}{
+$ b_1^T $ is a row and $ \lambda_{11} $ is a scalar}
+
+
+
+
+\renewcommand{\moveboundaries}{ 
+\normalsize
+$
+\FlaTwoByTwo{ L_{TL} } { 0 }
+              { L_{BL} } { L_{BR}   } \leftarrow
+\FlaThreeByThreeTL{ L_{00} }{ 0 }{ 0 }
+              { l_{10}^T }{ \lambda_{11} }{ 0 }
+              { L_{20} }{ l_{21} }{ L_{22} }
+$ and
+$
+\FlaTwoByOne{ B_T }
+            { B_B }
+\leftarrow
+\FlaThreeByOneT{ B_0 }
+               { b_1^T }
+               { B_2 }
+$
+}
+
+\begin{figure}[tbp]
+\begin{center}
+\FlaAlgorithm
+\end{center}
+\caption{Algorithm for $ B \becomes L^{-1} B $.}
+\end{figure}
+
+
+\resetsteps
+
+\renewcommand{\operation}{ \parbox{3.5in}{\ }  }
+
+
+\renewcommand{\precondition}{ \parbox{3in}{\ } }
+
+
+\renewcommand{\postcondition}{ \parbox{3in}{\ } } 
+
+
+\renewcommand{\invariant}{ 
+\begin{array}{c}
+\\
+\\
+\\
+\end{array} \parbox{3in}{\ }
+}
+
+
+\renewcommand{\guard}{ \parbox{1in}{ \ } }
+
+
+\renewcommand{\partitionings}{
+$
+\begin{array}{c}
+\\
+\\
+\\
+\end{array} \parbox{3in}{\ }
+$
+}
+
+
+\renewcommand{\partitionsizes}{\ }
+
+
+
+
+\renewcommand{\repartitionings}{ 
+$
+\begin{array}{c}
+\\
+\\
+\\
+\\
+\end{array} \parbox{3in}{\ }
+$
+}
+
+
+
+
+\renewcommand{\repartitionsizes}{\ }
+
+
+
+\renewcommand{\moveboundaries}{ 
+$
+\begin{array}{c}
+\\
+\\
+\\
+\\
+\end{array} \parbox{3in}{\ }
+$
+}
+
+
+
+
+\renewcommand{\beforeupdate}{
+\begin{array}{c}
+\\
+\\
+\\
+\\
+\end{array} \parbox{3in}{\ }
+}
+
+
+
+
+\renewcommand{\afterupdate}{
+\begin{array}{c}
+\\
+\\
+\\
+\\
+\end{array} \parbox{3in}{\ }
+}
+
+
+
+
+\renewcommand{\update}{
+$
+\begin{array}{c}
+\\
+\\
+\\
+\\
+\end{array} \parbox{3in}{\ }
+$
+}
+
+\begin{figure}[tbp]
+\begin{center}
+\worksheet
+\end{center}
+\caption{Blank Worksheet for deriving linear algebra algorithms}
+\end{figure}
+
+\end{document}

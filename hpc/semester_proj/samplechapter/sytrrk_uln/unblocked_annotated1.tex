@@ -1,0 +1,164 @@
+%
+% Annotated Algorithm
+%
+
+
+% our operation
+\renewcommand{\operation}{C \becomes A^T A + C}
+
+
+% precondition
+\renewcommand{\precondition}{C = \hat{C} \wedge n(C) = m(C) \wedge n(A) = m(A) \wedge n(C) = n(A)
+\wedge UpTr(C) \wedge LowTr(A)}
+
+% postcondition
+\renewcommand{\postcondition}{{ C \becomes A^T A + \hat{C} }}
+
+% invariant 1
+\renewcommand{\invariant}{
+\FlaTwoByTwo{ C_{TL} } { C_{TR} }
+            { * } { C_{BR} }
+=
+\FlaTwoByTwo{ A_{TL}^T A_{TL} + A_{BL}^T A_{BL} \hat{C}_{TL} } { \hat{C}_{TR} }
+            { * } { \hat{C}_{BR} }
+}
+
+% loop guard
+\renewcommand{\guard}{ \neg \SameSize( C_{TL}, C ) }
+
+% initial partitionings
+\renewcommand{\partitionings}{
+$
+C \rightarrow
+\FlaTwoByTwo{ C_{TL} } { C_{TR} }
+            { * } { C_{BR} }
+$,
+$
+\hat{C} \rightarrow
+\FlaTwoByTwo{ \hat{C}_{TL} } { \hat{C}_{TR} }
+            { * } { \hat{C}_{BR} }
+$ and
+$
+A \rightarrow
+\FlaTwoByTwo{ A_{TL} } { 0 }
+            { A_{BL} } { A_{BR} }
+$
+}
+
+
+\renewcommand{\partitionsizes}{$ C_{TL} $, $ \hat{C}_{TL} $, and $ A_{TL} $ is $ 0 \times 0 $ }
+
+
+
+% repartitioning at start of loop (step 5a)
+\renewcommand{\repartitionings}{
+\normalsize
+$
+\FlaTwoByTwo{ C_{TL} } { C_{TR} }
+            { * } { C_{BR} }
+\rightarrow
+\FlaThreeByThreeBR{ C_{00} }{ c_{01} }{ C_{02} }
+              { * }{ \gamma_{11} }{ c_{12}^T }
+              { * }{ * }{ C_{22} }
+$, \\ \\
+$
+\FlaTwoByTwo{ \hat{C}_{TL} } { \hat{C}_{TR} }
+            { * } { \hat{C}_{BR} }
+\rightarrow
+\FlaThreeByThreeBR{ \hat{C}_{00} }{ \hat{c}_{01} }{ \hat{C}_{02} }
+              { * }{ \hat{\gamma}_{11} }{ \hat{c}_{12}^T }
+              { * }{ * }{ \hat{C}_{22} }
+$, and \\ \\
+$
+\FlaTwoByTwo{ A_{TL} } { 0 }
+            { A_{BL} } { A_{BR} }
+\rightarrow
+\FlaThreeByThreeBR{ A_{00} }{ 0 }{ 0 }
+              { a_{10}^T }{ \alpha_{11} }{ 0 }
+              { A_{20} }{ a_{21} }{ A_{22} }
+$ \\
+}
+
+\renewcommand{\repartitionsizes}{
+$ \gamma_{11} $ , $ \hat{\gamma}_{11} $, and $ \alpha_{11} $ are scalars,
+$ c_{01} $ , $ \hat{c}_{01} $, and $ a_{21} $ are column vectors, \\
+and $ c_{12}^T $ , $ \hat{c}_{12}^T $, and $ a_{10}^T $ are row vectors. }
+
+
+
+% Moving double lines at end of loop (step 5b)
+\renewcommand{\moveboundaries}{
+\normalsize
+$
+\FlaTwoByTwo{ C_{TL} } { C_{TR} }
+            { * } { C_{BR} }
+\leftarrow
+\FlaThreeByThreeTL{ C_{00} }{ c_{01} }{ C_{02} }
+              { * }{ \gamma_{11} }{ c_{12}^T }
+              { * }{ * }{ C_{22} }
+$, \\ \\
+$
+\FlaTwoByTwo{ \hat{C}_{TL} } { \hat{C}_{TR} }
+            { * } { \hat{C}_{BR} }
+\leftarrow
+\FlaThreeByThreeTL{ \hat{C}_{00} }{ \hat{c}_{01} }{ \hat{C}_{02} }
+              { * }{ \hat{\gamma}_{11} }{ \hat{c}_{12}^T }
+              { * }{ * }{ \hat{C}_{22} }
+$, and \\ \\
+$
+\FlaTwoByTwo{ A_{TL} } { 0 }
+            { A_{BL} } { A_{BR} }
+\leftarrow
+\FlaThreeByThreeTL{ A_{00} }{ 0 }{ 0 }
+              { a_{10}^T }{ \alpha_{11} }{ 0 }
+              { A_{20} }{ a_{21} }{ A_{22} }
+$ \\
+}
+
+
+
+% state before the update
+\renewcommand{\beforeupdate}{
+\FlaThreeByThreeBR{ C_{00} }{ c_{01} }{ C_{02} }
+              { * }{ \gamma_{11} }{ c_{12}^T }
+              { * }{ * }{ C_{22} }
+=
+\FlaThreeByThreeBR{ A_{00}^T A_{00} + a_{10} a_{10}^T + A_{20}^T A_{20} + \hat{C}_{00} }{ \hat{c}_{01} }{ \hat{C}_{02} }
+              { * }{ \hat{\gamma}_{11} }{ \hat{c}_{12}^T }
+              { * }{ * }{ \hat{C}_{22} }
+}
+
+
+
+% state after the update
+\renewcommand{\afterupdate}{
+\FlaThreeByThreeTL{ C_{00} }{ c_{01} }{ C_{02} }
+              { * }{ \gamma_{11} }{ c_{12}^T }
+              { * }{ * }{ C_{22} }
+=
+\FlaThreeByThreeTL{ A_{00}^T A_{00} + a_{10} a_{10}^T + A_{20}^T A_{20} + \hat{C}_{00} }
+                  { A_{20}^T a_{21} + \alpha_{11} a_{10} + \hat{c}_{01} }{ \hat{C}_{02} }
+              { * }{ a_{21} a_{21}^T + \alpha_{11}^2 + \hat{\gamma}_{11} }{ \hat{c}_{12}^T }
+              { * }{ * }{ \hat{C}_{22} }
+}
+
+
+
+% the update
+\renewcommand{\update}{
+$
+\begin{array}{l}
+c_{01} \becomes A_{20}^T a_{21} + \alpha_{11} a_{10} + \hat{c}_{01} \\
+\gamma_{11} \becomes a_{21}^T a_{21} + \alpha_{11}^2 + \hat{\gamma}_{11}
+\end{array}
+$
+}
+
+% output
+\begin{figure}[tbp]
+\begin{center}
+\worksheet
+\end{center}
+\caption{Worksheet for deriving unblocked algorithm for $ C \becomes A^T A + \hat{C} $.}
+\label{fig:sytrrk_uln_downright_unblk_ann}
+\end{figure}

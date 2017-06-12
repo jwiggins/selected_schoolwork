@@ -1,0 +1,167 @@
+%
+% Annotated Algorithm
+%
+
+
+% our operation
+\renewcommand{\operation}{C \becomes A^T A + C}
+
+
+% precondition
+\renewcommand{\precondition}{C = \hat{C} \wedge n(C) = m(C) \wedge n(A) = m(A) \wedge n(C) = n(A)
+\wedge UpTr(C) \wedge LowTr(A)}
+
+% postcondition
+\renewcommand{\postcondition}{{ C \becomes A^T A + \hat{C} }}
+
+% invariant 2
+\renewcommand{\invariant}{
+\FlaTwoByTwo{ C_{TL} } { C_{TR} }
+            { * } { C_{BR} }
+=
+\FlaTwoByTwo{ \hat{C}_{TL} } { \hat{C}_{TR} }
+            { * } { A_{BR}^T + A_{BR} + \hat{C}_{BR} }
+}
+
+% loop guard
+\renewcommand{\guard}{ \neg \SameSize( C_{BR}, C ) }
+
+% initial partitionings
+\renewcommand{\partitionings}{
+$
+C \rightarrow
+\FlaTwoByTwo{ C_{TL} } { C_{TR} }
+            { * } { C_{BR} }
+$,
+$
+\hat{C} \rightarrow
+\FlaTwoByTwo{ \hat{C}_{TL} } { \hat{C}_{TR} }
+            { * } { \hat{C}_{BR} }
+$ and
+$
+A \rightarrow
+\FlaTwoByTwo{ A_{TL} } { 0 }
+            { A_{BL} } { A_{BR} }
+$
+}
+
+
+\renewcommand{\partitionsizes}{$ C_{BR} $, $ \hat{C}_{BR} $, and $ A_{BR} $ are $ 0 \times 0 $ }
+
+
+% Define the blocksize that appears in step 5a
+\renewcommand{\blocksize}{ b }
+%
+
+% repartitioning at start of loop (step 5a)
+\renewcommand{\repartitionings}{
+\normalsize
+$
+\FlaTwoByTwo{ C_{TL} } { C_{TR} }
+            { * } { C_{BR} }
+\rightarrow
+\FlaThreeByThreeTL{ C_{00} }{ C_{01} }{ C_{02} }
+              { * }{ C_{11} }{ C_{12} }
+              { * }{ * }{ C_{22} }
+$, \\ \\
+$
+\FlaTwoByTwo{ \hat{C}_{TL} } { \hat{C}_{TR} }
+            { * } { \hat{C}_{BR} }
+\rightarrow
+\FlaThreeByThreeTL{ \hat{C}_{00} }{ \hat{C}_{01} }{ \hat{C}_{02} }
+              { * }{ \hat{C}_{11} }{ \hat{C}_{12} }
+              { * }{ * }{ \hat{C}_{22} }
+$, and \\ \\
+$
+\FlaTwoByTwo{ A_{TL} } { 0 }
+            { A_{BL} } { A_{BR} }
+\rightarrow
+\FlaThreeByThreeTL{ A_{00} }{ 0 }{ 0 }
+              { A_{10} }{ A_{11} }{ 0 }
+              { A_{20} }{ A_{21} }{ A_{22} }
+$ \\
+}
+
+
+
+
+\renewcommand{\repartitionsizes}{
+$ C_{11} $ , $ \hat{C}_{11} $, and $ A_{11} $ are $ b \times b $ matrices}
+
+
+
+% Moving double lines at end of loop (step 5b)
+\renewcommand{\moveboundaries}{
+\normalsize
+$
+\FlaTwoByTwo{ C_{TL} } { C_{TR} }
+            { * } { C_{BR} }
+\leftarrow
+\FlaThreeByThreeBR{ C_{00} }{ C_{01} }{ C_{02} }
+              { * }{ C_{11} }{ C_{12} }
+              { * }{ * }{ C_{22} }
+$, \\ \\
+$
+\FlaTwoByTwo{ \hat{C}_{TL} } { \hat{C}_{TR} }
+            { * } { \hat{C}_{BR} }
+\leftarrow
+\FlaThreeByThreeBR{ \hat{C}_{00} }{ \hat{C}_{01} }{ \hat{C}_{02} }
+              { * }{ \hat{C}_{11} }{ \hat{C}_{12} }
+              { * }{ * }{ \hat{C}_{22} }
+$, and \\ \\
+$
+\FlaTwoByTwo{ A_{TL} } { 0 }
+            { A_{BL} } { A_{BR} }
+\leftarrow
+\FlaThreeByThreeBR{ A_{00} }{ 0 }{ 0 }
+              { A_{10} }{ A_{11} }{ 0 }
+              { A_{20} }{ A_{21} }{ A_{22} }
+$ \\
+}
+
+
+
+% state before the update
+\renewcommand{\beforeupdate}{
+\FlaThreeByThreeTL{ C_{00} }{ C_{01} }{ C_{02} }
+              { * }{ C_{11} }{ C_{12} }
+              { * }{ * }{ C_{22} }
+=
+\FlaThreeByThreeTL{ \hat{C}_{00} }{ \hat{C}_{01} }{ \hat{C}_{02} }
+              { * }{ \hat{C}_{11} }{ \hat{C}_{12} }
+              { * }{ * }{ A_{22}^T A_{22} + \hat{C}_{22} }
+}
+
+
+
+% state after the update
+\renewcommand{\afterupdate}{
+\FlaThreeByThreeBR{ C_{00} }{ C_{01} }{ C_{02} }
+              { * }{ C_{11} }{ C_{12} }
+              { * }{ * }{ C_{22} }
+=
+\FlaThreeByThreeBR{ \hat{C}_{00} } { \hat{C}_{01} }{ \hat{C}_{02} }
+              { * }{ A_{11}^T A_{11} + A_{21}^T A_{21} + \hat{C}_{11} }{ A_{21}^T A_{22} + \hat{C}_{12} }
+              { * }{ * }{ A_{22}^T A_{22} + \hat{C}_{22} }
+}
+
+
+
+% the update
+\renewcommand{\update}{
+$
+\begin{array}{l}
+C_{11} \becomes A_{11}^T A_{11} + A_{21}^T A_{21} + \hat{C}_{11} \\
+C_{12} \becomes A_{21}^T A_{22} + \hat{C}_{12}
+\end{array}
+$
+}
+
+% output
+\begin{figure}[tbp]
+\begin{center}
+\worksheet
+\end{center}
+\caption{Worksheet for deriving blocked algorithm for $ C \becomes A^T A + \hat{C} $.}
+\label{fig:sytrrk_uln_upleft_blk_ann}
+\end{figure}
