@@ -1,0 +1,15 @@
+prok@prism:~/cs377$ mpirun -machinefile machines -np 73 ./data_dist -r /tmp -c 16 -f vhmale.rawiv
+datasize = 656408576 bytes (626.000000MB)
+data type = short
+min (0.000000,0.000000,0.000000)
+max (511.000000,511.000000,1251.000000)
+numverts = 328204288
+numcells = 326662371
+dim (512,512,1252)
+origin (0.000000,0.000000,0.000000)
+span (1.000000,1.000000,1.000000)
+................................................................................
+*
+................................................................................
+[0] Timer "disk read time": time elapsed 178.456853s
+[0] Timer "network transmission time": time elapsed 16.060836s

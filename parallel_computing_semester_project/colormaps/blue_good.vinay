@@ -1,0 +1,25 @@
+Anthony and Vinay are Great.
+Alphamap
+Number of nodes
+6
+Position and opacity
+0 0
+1 0
+0.112172 0
+0.200477 0.0769231
+0.312649 0.0769231
+0.375267 0
+ColorMap
+Number of nodes
+6
+Position and RGB
+0 0 0 0
+1 0 1 0
+0.0381862 1 0 0
+0.162047 0.0352941 0 0.721569
+0.217484 0.498039 0.498039 0
+0.272921 1 1 0.466667
+IsocontourMap
+Number of nodes
+0
+Position
